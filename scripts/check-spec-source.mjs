@@ -61,10 +61,10 @@ function ownRepo() {
 }
 
 const file = path.join(root(), ".spec-source");
-if (!existsSync(file)) skip("файлу .spec-source немає — це upstream PM (або форк ще не налаштовано).", { requiredInFork: true });
+if (!existsSync(file)) skip("файлу .spec-source немає (upstream PM або форк ще не налаштовано).", { requiredInFork: true });
 
 const { upstream, version } = parseSpecSource(file);
-if (!upstream && !version) skip(".spec-source порожній або закоментований — це upstream PM.", { requiredInFork: true });
+if (!upstream && !version) skip(".spec-source порожній або закоментований (upstream PM або форк до першого релізу спеки).", { requiredInFork: true });
 if (!upstream || !/^[\w.-]+\/[\w.-]+$/.test(upstream)) fail(`у .spec-source потрібен рядок "upstream: <owner>/<repo>", а є "${upstream ?? ""}".`);
 if (!version || !/^spec-v\d+\.\d+$/.test(version)) fail(`у .spec-source потрібен рядок "version: spec-vX.Y", а є "${version ?? ""}".`);
 
