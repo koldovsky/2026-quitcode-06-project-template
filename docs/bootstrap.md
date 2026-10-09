@@ -19,7 +19,7 @@ Upstream PM: <!-- owner/team-repo --> · Мій форк: <!-- me/team-repo --> 
 ## Supabase
 
 - [ ] Проєкт створено у власній організації Supabase (не через Vercel Marketplace) — <!-- регіон -->
-- [ ] «Confirm email» вимкнено (Authentication → Sign In / Providers → Email)
+- [ ] «Confirm email» вимкнено (Authentication → Sign In / Providers → Email; https://supabase.com/dashboard/project/_/auth/providers)
 - [ ] `npx supabase login` · `npx supabase link --project-ref <ref>` — <!-- вивід без секретів -->
 - [ ] `npx supabase db push --dry-run` → `npm run db:push` — <!-- список застосованих міграцій -->
 - [ ] `npm run db:types` — `src/lib/supabase/database.types.ts` перегенеровано

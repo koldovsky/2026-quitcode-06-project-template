@@ -41,6 +41,8 @@
    Require status checks (`spec`, `app`).
 2. **Продукт.** Заповніть `product/vision.md`, `glossary.md`, `roles.md` (матриця прав), `roadmap.md`.
    Справжні назви клієнта — у секрет `SPEC_DENYLIST` (Settings → Secrets and variables → Actions), не в файли.
+   Створіть мітку для питань розробників (форма issue ставить лише наявну мітку):
+   `gh label create spec-question --repo <pm>/<team-repo> --description "Питання до специфікації"`.
 3. **Перший зріз.** `npm ci`, потім у Claude Code `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`)
    або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
    Формат (вимоги EARS з SHALL, `#### Scenario: AC-<AREA>-<NN> …`) агент бере з `openspec/config.yaml`.
@@ -101,8 +103,15 @@ git branch -M main
 npm i -E @supabase/supabase-js@2.117.3 @supabase/ssr@0.12.7
 npm i -D @types/node@^24
 npm i -D -E supabase@2.120.0 @fission-ai/openspec@1.14.1 vitest@5.0.3
-# package.json: "engines": {"node": "24.x"} і scripts (lint --max-warnings 0, typecheck, test, spec:*, ac:coverage, db:*, users:demo)
-# .gitignore: після ".env*" додати "!.env.example"; .gitattributes: "* text=auto eol=lf"
+npm pkg set engines.node=24.x scripts.lint="eslint --max-warnings 0" \
+  scripts.typecheck="next typegen && tsc --noEmit" scripts.test="vitest run" \
+  scripts.spec:validate="openspec validate --all --strict" scripts.spec:check="node scripts/check-spec.mjs" \
+  scripts.ac:coverage="node scripts/check-ac-coverage.mjs" scripts.spec:source="node scripts/check-spec-source.mjs" \
+  scripts.db:push="supabase db push" \
+  scripts.db:types="supabase gen types typescript --linked > src/lib/supabase/database.types.ts" \
+  scripts.users:demo="node --env-file=.env.local scripts/create-demo-users.mjs"
+sed -i 's/^\.env\*$/.env*\n!.env.example/' .gitignore   # .env.example комітимо (GNU sed; на macOS — допишіть рядок вручну)
+printf '* text=auto eol=lf\n*.ico binary\n*.png binary\n' > .gitattributes
 
 # 3. Supabase: конфіг і міграція
 npx supabase init
