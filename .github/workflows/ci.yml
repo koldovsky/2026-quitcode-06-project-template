@@ -15,9 +15,10 @@ on:
 permissions:
   contents: read
 
+# Новий push у PR скасовує застарілий прогін; push у main — ні: черга, щоб не обірвати job db посеред db push.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   OPENSPEC_TELEMETRY: "0"
@@ -68,6 +69,7 @@ jobs:
       - run: npm ci
       - name: product/ and openspec/specs match the upstream tag from .spec-source
         # До першого тегу spec-v0.1 .spec-source закоментований: крок пропускається з попередженням.
+        # Заповнюють його в гілці sync/spec-vX.Y разом із git merge тегу (README, кроки 6 і 8 розробника).
         # Щоб зробити його обов'язковим, додайте env SPEC_SOURCE_REQUIRED: "1".
         run: npm run spec:source
       - name: Every AC has a matrix row; every «реалізовано» has a test
