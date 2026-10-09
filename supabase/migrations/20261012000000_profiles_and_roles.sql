@@ -8,10 +8,17 @@
 --   4) auth.uid() у політиках — лише як `(select auth.uid())`;
 --   5) security definer функції — лише у схемі private, з `set search_path = ''`.
 --
--- Ролі шаблону: member, admin. Проєкт замінює набір ролей новою міграцією:
+-- Ролі шаблону: member, admin. Проєкт замінює набір ролей новою міграцією, і порядок важливий:
+-- спершу наявні дані, потім значення за замовчуванням колонки role, і лише тоді новий constraint.
+-- Тригер on_auth_user_created вставляє профіль із role за замовчуванням: якщо лишити default 'member',
+-- кожен createUser (npm run users:demo) впаде на новому constraint. Старий constraint знімаємо першим,
+-- бо він не пропустить UPDATE на нову роль (23514), а користувачі з 'member' після users:demo вже є:
 --   alter table public.profiles drop constraint profiles_role_check;
---   alter table public.profiles add constraint profiles_role_check
+--   update public.profiles set role = 'employee' where role = 'member';   -- 1) дані
+--   alter table public.profiles alter column role set default 'employee'; -- 2) default
+--   alter table public.profiles add constraint profiles_role_check        -- 3) новий набір ролей
 --     check (role in ('employee', 'manager', 'admin'));
+-- Міграція виконується однією транзакцією: якщо щось упаде, старий constraint лишиться на місці.
 
 -- Схема для службових функцій: її НЕ додаємо в [api] schemas, тож Data API її не бачить.
 create schema if not exists private;
