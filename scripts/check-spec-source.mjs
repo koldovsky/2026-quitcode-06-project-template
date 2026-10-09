@@ -8,8 +8,8 @@
 // Кроки: git fetch https://github.com/<owner>/<repo>.git refs/tags/<version> →
 //        git diff --quiet <version> -- product openspec/specs
 // У самому upstream (немає .spec-source, усі рядки закоментовані або upstream == цей репозиторій)
-// перевірку пропускаємо з повідомленням. SPEC_SOURCE_REQUIRED=1 (CI у форку) робить відсутній
-// .spec-source помилкою. SPEC_SOURCE_URL перевизначає адресу (тести, дзеркала).
+// перевірку пропускаємо з повідомленням (у GitHub Actions — з попередженням). SPEC_SOURCE_REQUIRED=1 робить
+// відсутній .spec-source помилкою (вмикайте в CI форку, коли перший тег спеки вже є). SPEC_SOURCE_URL перевизначає адресу (тести, дзеркала).
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
@@ -26,6 +26,10 @@ function skip(reason, { requiredInFork = false } = {}) {
     fail(`${reason} У форку .spec-source обов'язковий: upstream і тег версії специфікації.`);
   }
   console.log(`spec:source — SKIP: ${reason}`);
+  // У GitHub Actions форку — помітне попередження: до першого тегу spec-v0.1 це нормально.
+  if (requiredInFork && process.env.GITHUB_ACTIONS === "true") {
+    console.log(`::warning title=spec:source::${reason} Заповніть .spec-source після першого релізу специфікації.`);
+  }
   process.exit(0);
 }
 

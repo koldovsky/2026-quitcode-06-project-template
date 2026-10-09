@@ -67,9 +67,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: product/ and openspec/specs match the upstream tag from .spec-source
+        # До першого тегу spec-v0.1 .spec-source закоментований: крок пропускається з попередженням.
+        # Щоб зробити його обов'язковим, додайте env SPEC_SOURCE_REQUIRED: "1".
         run: npm run spec:source
-        env:
-          SPEC_SOURCE_REQUIRED: "1"
       - name: Every AC has a matrix row; every «реалізовано» has a test
         run: npm run ac:coverage
 
