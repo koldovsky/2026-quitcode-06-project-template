@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Шаблон командного проєкту: Next.js + Supabase + OpenSpec
 
-## Getting Started
+Стартовий репозиторій для вебзастосунку «з нуля»: агенція бере його для нового клієнтського проєкту,
+а в курсі — кожна команда (PM + розробники) для свого навчального продукту.
 
-First, run the development server:
+- **Застосунок:** Next.js 16 (App Router, `src/`), вхід email + пароль через Supabase Auth, сторінка
+  з email і роллю користувача з таблиці `profiles`; сесію оновлює `src/proxy.ts`.
+- **База як код:** `supabase/migrations/` (профілі й ролі з RLS і явними GRANT), ідемпотентний `seed.sql`,
+  синтетичні користувачі (`npm run users:demo`).
+- **Специфікація:** OpenSpec (`openspec/`) з правилами формату в `openspec/config.yaml`; продуктовий
+  контекст PM — `product/`; AC ID наскрізно: спека → назва тесту → `docs/conformance.md`.
+- **Агенти:** `AGENTS.md` (+ `CLAUDE.md` = `@AGENTS.md`), команди `/opsx:*` і `/conformance`, скіли
+  `spec-clarify` (розробник) і `spec-review` (PM) — однаково в Claude Code і Cursor; `.mcp.json` з Supabase MCP
+  лише на читання; `.claude/settings.json` забороняє читати `.env*` і деструктивні команди Supabase CLI.
+- **Ворота:** GitHub Actions (`spec`, `app`, `conformance` у форках, `db` у форках із секретами),
+  шаблон PR, форма issue «Питання до специфікації», `.coderabbit.yaml`.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| Шар курсу | Де в шаблоні |
+|---|---|
+| Правила й команди | `AGENTS.md`, `CLAUDE.md`, `.claude/commands/`, `.cursor/commands/` |
+| Скіли | `.claude/skills/` (Cursor читає цю ж теку) |
+| MCP з мінімальними правами | `.mcp.json`, `.claude/settings.json` |
+| Специфікації | `product/`, `openspec/`, `scripts/check-*.mjs`, `docs/conformance.md` |
+
+## Модель репозиторіїв
+
+```text
+шаблон (цей репозиторій)
+  └─ «Use this template» → upstream PM  <pm>/<team-repo>     ← product/, openspec/ (лише PM), теги spec-vX.Y
+        ├─ fork → <dev1>/<team-repo>  ← код, міграції, тести; свій Supabase і Vercel
+        └─ fork → <dev2>/<team-repo>  …
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Розробник змінює специфікацію лише PR-ом в upstream або питанням (issue `spec-question`).
+Нову версію спеки забирає у форк гілкою `sync/spec-vX.Y`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Шлях PM
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Upstream.** На сторінці шаблону — **Use this template → Create a new repository**, власник — ваш акаунт,
+   назва — слаг команди, **Public**. Settings → Rules → Rulesets: для `main` — Require a pull request,
+   Require status checks (`spec`, `app`).
+2. **Продукт.** Заповніть `product/vision.md`, `glossary.md`, `roles.md` (матриця прав), `roadmap.md`.
+   Справжні назви клієнта — у секрет `SPEC_DENYLIST` (Settings → Secrets and variables → Actions), не в файли.
+3. **Перший зріз.** `npm ci`, потім у Claude Code `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`)
+   або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
+   Формат (вимоги EARS з SHALL, `#### Scenario: AC-<AREA>-<NN> …`) агент бере з `openspec/config.yaml`.
+4. **Перевірка.** `npm run spec:validate`, `npm run spec:check`, скіл `spec-review`.
+5. **Реліз.** PR зі зміною → рев'ю команди → у тій самій гілці `npx openspec archive add-<зріз> -y` і запис
+   у `product/CHANGELOG.md` (ruleset не пускає прямі коміти в `main`) → merge →
+   `git switch main && git pull && git tag spec-v0.1 && git push origin spec-v0.1`.
+6. **Питання розробників.** Відповідайте в issues `spec-question`; рішення — у `product/decisions.md`;
+   якщо змінюється поведінка — нова зміна (MODIFIED/ADDED) і тег `spec-v0.2`.
 
-## Learn More
+## Шлях розробника
 
-To learn more about Next.js, take a look at the following resources:
+1. **Форк** upstream PM у свій акаунт; Actions → увімкнути workflows; локально:
+   `git clone https://github.com/<я>/<team-repo>.git` → `gh repo set-default <я>/<team-repo>`
+   (інакше `gh pr create` цілить в upstream) → `git remote add upstream https://github.com/<pm>/<team-repo>.git`.
+   Ruleset на `main` (PR + статуси `spec`, `app`, `conformance`).
+2. **Залежності:** Node 24 (`node -v`), `npm ci`, `npm run typecheck`, `npm test`.
+3. **Supabase** (власна організація, не через Vercel Marketplace): створіть проєкт; Authentication →
+   Sign In / Providers → Email → вимкніть Confirm email; `npx supabase login` → `npx supabase link --project-ref <ref>` →
+   `npx supabase db push --dry-run` → `npm run db:push` → `npm run db:types`.
+   `.env.local` за зразком `.env.example` → `npm run users:demo` → `npm run dev` → вхід як `admin@example.test`.
+4. **Vercel** (Hobby): Add New → Project → імпорт форку; змінні `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` для Production і Preview → редеплой.
+   Supabase → Authentication → URL Configuration: Site URL = прод-URL, Redirect URLs `http://localhost:3000/**`
+   і `https://*-<slug>.vercel.app/**`. Для навчальних проєктів вимкніть Vercel Authentication на preview.
+5. **Секрети CI** (для job `db`): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`.
+6. **Специфікація:** після тегу PM розкоментуйте `.spec-source` (`upstream`, `version`) → `npm run spec:source`.
+   Скіл `spec-clarify` → питання як issues в upstream → журнал у `docs/spec-reading.md`.
+7. **Реалізація:** `npx openspec new change impl-<зріз>` з `skip_specs: true` у `.openspec.yaml`, `design.md`,
+   `tasks.md` («Done when: AC-…») → гілка → код + тести `it("AC-…: …")` → `/conformance` → PR у форку
+   (CI зелений, `@coderabbitai review`) → merge → archive.
+8. **Нова версія спеки:** `git fetch upstream --tags` → `git switch -c sync/spec-v0.2` → `git merge spec-v0.2` →
+   оновити `.spec-source` → нові AC у `docs/conformance.md` → PR. Докази бутстрапу — у `docs/bootstrap.md`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Перевірки
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Команда | Що перевіряє |
+|---|---|
+| `npm run lint` / `typecheck` / `test` / `build` | ESLint без попереджень, типи (`next typegen` + `tsc`), Vitest, збірка з `ƒ Proxy (Middleware)` |
+| `npm run spec:validate` | `openspec validate --all --strict` — структура специфікацій |
+| `npm run spec:check` | AC ID на початку кожного `#### Scenario:`, унікальність у `openspec/specs`, denylist |
+| `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; «реалізовано» має непропущений тест з ID; тести не посилаються на неіснуючі AC |
+| `npm run spec:source` | у форку `product/` і `openspec/specs/` збігаються з тегом upstream із `.spec-source` |
 
-## Deploy on Vercel
+## Як цей шаблон зібрано з нуля
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Повторюваний рецепт (Git Bash / macOS / Linux; Node 24, npm 11). Для нового клієнта зазвичай достатньо
+«Use this template»; рецепт — щоб оновити шаблон на нові версії або зібрати його заново.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# 1. Скелет Next.js (версію зафіксовано; --turbopack не потрібен, --import-alias — за замовчуванням)
+npx --yes create-next-app@16.4.0 my-project --ts --app --eslint --tailwind --src-dir --use-npm \
+  --no-agent-feedback --no-cache-components
+cd my-project
+git branch -M main
+
+# 2. Залежності (спершу @types/node 24 — інакше Vitest 5 дає ERESOLVE)
+npm i -E @supabase/supabase-js@2.117.3 @supabase/ssr@0.12.7
+npm i -D @types/node@^24
+npm i -D -E supabase@2.120.0 @fission-ai/openspec@1.14.1 vitest@5.0.3
+# package.json: "engines": {"node": "24.x"} і scripts (lint --max-warnings 0, typecheck, test, spec:*, ac:coverage, db:*, users:demo)
+# .gitignore: після ".env*" додати "!.env.example"; .gitattributes: "* text=auto eol=lf"
+
+# 3. Supabase: конфіг і міграція
+npx supabase init
+# supabase/config.toml: [api] auto_expose_new_tables = false; [auth] site_url = "http://localhost:3000",
+#   additional_redirect_urls = ["http://localhost:3000/**"]; [auth.email] enable_confirmations = false
+# supabase/migrations/20261012000000_profiles_and_roles.sql, supabase/seed.sql, supabase/demo-users.json
+
+# 4. OpenSpec: профіль custom з verify (глобальний конфіг цієї машини), потім init
+export OPENSPEC_TELEMETRY=0
+npx openspec config set profile custom
+npx openspec config set workflows '["propose","explore","apply","verify","update","sync","archive"]'
+npx openspec init --tools claude,cursor --language Ukrainian --profile custom
+npx openspec update
+# openspec/config.yaml: context + rules (кожен пункт у лапках); порожні openspec/specs і openspec/changes з .gitkeep
+
+# 5. Перенести з цього шаблону файли, написані вручну:
+#   src/proxy.ts, src/lib/supabase/*, src/app/{page.tsx,login/*}, scripts/**, tests/**, vitest.config.mts,
+#   .claude/{settings.json,commands/conformance.md,skills/spec-*}, .cursor/commands/conformance.md, .mcp.json,
+#   .github/**, .coderabbit.yaml, AGENTS.md (наші розділи після блоку Next.js), CLAUDE.md,
+#   product/**, docs/**, .env.example, .spec-source
+# tsconfig.json: "exclude" + "tests/fixtures"; eslint.config.mjs: globalIgnores + "tests/fixtures/**"
+
+# 6. Перевірити
+npm run lint && npm run typecheck && npm test && npm run build
+npm run spec:validate && npm run spec:check && npm run ac:coverage && npm run spec:source
+```
+
+У Windows PowerShell 5.1 лапки всередині JSON треба екранувати:
+`npx openspec config set workflows '[\"propose\",\"explore\",\"apply\",\"verify\",\"update\",\"sync\",\"archive\"]'`
+(або інтерактивно: `npx openspec config profile`). Змінна середовища: `$env:OPENSPEC_TELEMETRY = "0"`.
+
+Чому саме так — коротко:
+
+- `--no-cache-components`: з Cache Components за замовчуванням (16.4) офіційний патерн Supabase для захищеної
+  сторінки не збирається; `proxy.ts` з `--src-dir` має лежати в `src/`, інакше його мовчки ігнорують.
+- `setAll(cookies, headers)` у `src/lib/supabase/proxy.ts` копіює заголовки кешування у відповідь (`@supabase/ssr` ≥ 0.10).
+- `auto_expose_new_tables = false`: як у хмарі, де з 30.10.2026 немає автогрантів на нові таблиці.
+- Профіль OpenSpec зберігається на машині, а не в репозиторії, тому згенеровані `.claude/` і `.cursor/` закомічені.
