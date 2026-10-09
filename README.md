@@ -77,7 +77,8 @@
    Authentication вимкніть «Allow new users to sign up» (інакше будь-хто з публічним ключем із бандла
    зареєструється сам; локально те саме робить `[auth] enable_signup = false` у `supabase/config.toml`) і
    Confirm email для Email (точне місце перемикачів у Dashboard звіряємо на репетиції). Користувачів створює
-   лише `npm run users:demo` (Admin API). `npx supabase login` → `npx supabase link --project-ref <ref>` →
+   лише `npm run users:demo` (Admin API): з вимкненою реєстрацією він працює й у хмарі (за кодом GoTrue — так;
+   звіряємо на репетиції). `npx supabase login` → `npx supabase link --project-ref <ref>` →
    `npx supabase db push --dry-run` → `npm run db:push` → `npm run db:types`.
    `.env.local` за зразком `.env.example` → `npm run users:demo` → `npm run dev` → вхід як `admin@example.test`.
 4. **Vercel** (Hobby): Add New → Project → імпорт форку; для Production і Preview — лише дві змінні
@@ -89,8 +90,10 @@
 5. **Секрети CI** (для job `db`): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`.
    **Перший PR у форку — `docs/bootstrap.md`** (докази бутстрапу, день 0–1, без значень секретів): CI зелений
    (`spec`, `app`, `conformance`), preview відкривається. Тестів з AC ID у назвах у ньому ще немає.
-6. **Перша версія спеки.** Форк зроблено до тегу `spec-v0.1`, тож забирайте її тим самим потоком, що й кожну
-   наступну (крок 8): `git fetch upstream --tags` → `git switch -c sync/spec-v0.1` → `git merge spec-v0.1` →
+6. **Перша версія спеки.** Форк зроблено до тегу `spec-v0.1` (якщо вже після нього — цей крок робіть до PR
+   бутстрапу, а `docs/bootstrap.md` закомітьте в ту саму гілку `sync/spec-v0.1`: окремий PR бутстрапу впаде на
+   `conformance` з `NO-ROW`), тож забирайте її тим самим потоком, що й кожну наступну (крок 8): `git fetch upstream --tags` →
+   `git switch -c sync/spec-v0.1` → `git merge spec-v0.1` →
    розкоментуйте `.spec-source` (`upstream: <pm>/<team-repo>`, `version: spec-v0.1`) → `npm run spec:source` (OK) →
    рядок у `docs/conformance.md` для кожного AC (ще не зроблене — `відкладено (причина)`) → `npm run ac:coverage` →
    PR у форку, злитий кнопкою **Create a merge commit** (не Squash і не Rebase: тег має бути в історії `main`,
