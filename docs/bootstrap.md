@@ -13,7 +13,7 @@ Upstream PM: <!-- owner/team-repo --> · Мій форк: <!-- me/team-repo --> 
 - [ ] Форк створено, Actions увімкнено (Actions → «I understand my workflows, go ahead and enable them») — <!-- посилання на перший run -->
 - [ ] `gh repo set-default <я>/<форк>` виконано (PR іде у форк, а не в upstream) — <!-- вивід `gh repo set-default --view` -->
 - [ ] Ruleset на `main`: PR обов'язковий, статуси `spec` і `app` обов'язкові — <!-- знімок налаштувань -->
-- [ ] `.spec-source` заповнено (`upstream:`, `version:`), `npm run spec:source` → OK
+- [ ] Тег спеки злито гілкою `sync/spec-v0.1`, `.spec-source` заповнено (`upstream:`, `version:`), `npm run spec:source` → OK
 - [ ] CodeRabbit встановлено на свій акаунт; у PR працює `@coderabbitai review`
 
 ## Supabase

@@ -83,10 +83,26 @@ try {
 } catch (e) {
   if (e.status === 1) {
     const stat = git(["diff", "--stat", version, "--", ...PATHS]);
-    fail(
-      `${PATHS.join(" і ")} відрізняються від ${upstream}@${version}:\n${stat}\n` +
-        `Специфікацію змінює лише PM в upstream. Синхронізація: гілка sync/${version} + git merge ${version}.`,
-    );
+    const sync =
+      `Синхронізація: git fetch upstream --tags → git switch -c sync/${version} → git merge ${version} ` +
+      `→ рядки нових AC у docs/conformance.md → PR у форку.`;
+    // Чи тег уже злитий у цю гілку? 1 — ні (форк просто ще не синхронізовано), 0 — так (файли змінено у форку).
+    let merged = null;
+    try {
+      git(["merge-base", "--is-ancestor", version, "HEAD"]);
+      merged = true;
+    } catch (err) {
+      if (err.status === 1) merged = false;
+    }
+    const reason =
+      merged === false
+        ? `Тег ${version} ще не злитий у цю гілку — форк не синхронізовано з upstream. ${sync}`
+        : merged === true
+          ? `Тег ${version} уже злитий, тож ці файли змінено у форку. product/ і openspec/specs змінює лише PM ` +
+            `в upstream: поверніть їх (git checkout ${version} -- ${PATHS.join(" ")}), а пропозицію — PR-ом в upstream.`
+          : `Або форк ще не злив тег ${version} (${sync}), або ці файли змінено у форку ` +
+            `(product/ і openspec/specs змінює лише PM в upstream).`;
+    fail(`${PATHS.join(" і ")} відрізняються від ${upstream}@${version}:\n${stat}\n${reason}`);
   }
   fail(`git diff завершився з помилкою: ${e.stderr ?? e.message}`);
 }

@@ -84,7 +84,22 @@ describe("scripts/check-spec-source.mjs", () => {
     const { code, out } = run(fork, { GITHUB_REPOSITORY: "dev-owner/team-repo" });
     expect(code).toBe(1);
     expect(out).toContain("openspec/specs/demo/spec.md");
+    expect(out).toContain("уже злитий");
     git(fork, "checkout", "--", "openspec/specs/demo/spec.md");
+  });
+
+  it("says the fork has not merged the tag yet when upstream released a newer spec", () => {
+    // Розробник форкнув до релізу; PM потім змінив продукт і поставив новий тег.
+    write(upstream, "product/vision.md", "# Vision v0.2\n");
+    git(upstream, "commit", "-q", "-am", "spec v0.2");
+    git(upstream, "tag", "spec-v0.2");
+    write(fork, ".spec-source", "upstream: pm-owner/team-repo\nversion: spec-v0.2\n");
+    const { code, out } = run(fork, { GITHUB_REPOSITORY: "dev-owner/team-repo" });
+    expect(code).toBe(1);
+    expect(out).toContain("product/vision.md");
+    expect(out).toContain("ще не злитий");
+    expect(out).toContain("git merge spec-v0.2");
+    expect(out).not.toContain("уже злитий");
   });
 
   it("fails when the tag does not exist upstream", () => {
