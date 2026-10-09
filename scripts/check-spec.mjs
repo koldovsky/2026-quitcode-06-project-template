@@ -95,7 +95,7 @@ if (words.length) {
 
 const total = Object.values(errors).reduce((n, list) => n + list.length, 0);
 console.log(
-  `spec:check — файлів зі сценаріями: ${files.length}, сценаріїв: ${scenarioCount}, ` +
+  `spec:check — markdown-файлів: ${files.length}, сценаріїв: ${scenarioCount}, ` +
     `AC у канонічних специфікаціях: ${seen.size}, слів у denylist: ${words.length}`,
 );
 printList("BAD-TITLE: сценарій без AC ID на початку назви", errors.title);
