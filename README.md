@@ -52,8 +52,8 @@
    Справжні назви клієнта — у секрет `SPEC_DENYLIST` (Settings → Secrets and variables → Actions), не в файли.
    Створіть мітку для питань розробників (форма issue ставить лише наявну мітку):
    `gh label create spec-question --repo <pm>/<team-repo> --description "Питання до специфікації"`.
-3. **Перший зріз.** `npm ci`, `openspec --version` = `1.14.1` (див. «Перед початком»), потім у Claude Code `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`)
-   або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
+3. **Перший зріз.** `npm ci`, `openspec --version` = `1.14.1` (див. «Перед початком»), потім у Claude Code
+   `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`) або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
    Формат (вимоги EARS з SHALL, `#### Scenario: AC-<AREA>-<NN> …`) агент бере з `openspec/config.yaml`.
 4. **Перевірка.** `npm run spec:validate`, `npm run spec:check`, скіл `spec-review`.
 5. **Реліз.** PR зі зміною → рев'ю команди → у тій самій гілці, **до merge**, `npx openspec archive add-<зріз> -y`
