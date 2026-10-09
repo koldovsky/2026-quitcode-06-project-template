@@ -3,13 +3,17 @@
 //   спека (openspec/specs/**) → рядок матриці (docs/conformance.md) → тест (назва test()/it() у src/** або tests/**).
 // FAIL, якщо:
 //   NO-ROW     — AC є в специфікаціях, але в docs/conformance.md немає рядка (дрейф після синхронізації спеки);
-//   MISSING    — рядок має статус «реалізовано», але немає непропущеного тесту з цим ID у назві;
+//   MISSING    — рядок має статус «реалізовано», але немає непропущеного тесту з цим ID у назві
+//                (закоментовані тести, .skip/.todo/.fails/.skipIf і тести всередині describe.skip не рахуються;
+//                it.each / test.for / .concurrent / .runIf — рахуються);
 //   ORPHAN     — тест посилається на AC, якого немає в специфікаціях;
-//   BAD-STATUS — статус рядка не «реалізовано» і не «відкладено (причина)».
+//   BAD-STATUS — статус рядка не рівно «реалізовано» і не «відкладено (причина)»
+//                («реалізовано частково» — теж BAD-STATUS: або реалізовано повністю, або відкладено з причиною).
 // Попередження (не валить): рядок матриці для AC, якого вже немає в специфікаціях; дублікати рядків.
 // Секції «## REMOVED Requirements» ігноруються. Скрипт перевіряє НАЯВНІСТЬ тесту, а не те, що він зелений:
 // це робить `npm test`.
-import { collectSpecAcs, collectTestRefs, parseConformance, printList } from "./lib/spec-lib.mjs";
+import { collectSpecAcs, isDeferred, isImplemented, parseConformance, printList } from "./lib/spec-lib.mjs";
+import { collectTestRefs } from "./lib/test-titles.mjs";
 
 const specAcs = collectSpecAcs();
 const { exists: matrixExists, rows } = parseConformance();
@@ -36,15 +40,14 @@ for (const [id, list] of rowsById) {
   if (list.length > 1) duplicateRows.push(`${id} — рядки ${list.map((r) => r.line).join(", ")}`);
   if (!specAcs.has(id)) staleRows.push(`${id} — docs/conformance.md:${list[0].line}`);
   for (const row of list) {
-    const status = row.status.toLowerCase();
-    if (status.startsWith("реалізовано")) {
+    if (isImplemented(row.status)) {
       const covered = (testRefs.get(id) ?? []).some((t) => t.counted);
       if (!covered) {
         const skipped = (testRefs.get(id) ?? []).filter((t) => !t.counted);
         const hint = skipped.length ? ` (є лише пропущені: ${skipped.map((t) => `${t.file}:${t.line}`).join(", ")})` : "";
         missing.push(`${id} — статус «реалізовано», але тесту з «${id}» у назві немає${hint}`);
       }
-    } else if (!/^відкладено\s*\(.+\)$/.test(status)) {
+    } else if (!isDeferred(row.status)) {
       badStatus.push(`${id} — docs/conformance.md:${row.line}: «${row.status}» (дозволено: реалізовано / відкладено (причина))`);
     }
   }
@@ -54,7 +57,7 @@ for (const [id, list] of testRefs) {
   if (!specAcs.has(id)) orphan.push(`${id} — ${list.map((t) => `${t.file}:${t.line}`).join(", ")}`);
 }
 
-const implemented = rows.filter((r) => r.status.toLowerCase().startsWith("реалізовано")).length;
+const implemented = rows.filter((r) => isImplemented(r.status)).length;
 console.log(
   `ac:coverage — AC у специфікаціях: ${specAcs.size}, рядків у матриці: ${rows.length}` +
     `${matrixExists ? "" : " (docs/conformance.md не знайдено)"}, «реалізовано»: ${implemented}, ` +

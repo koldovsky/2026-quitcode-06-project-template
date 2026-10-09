@@ -1,4 +1,5 @@
 // Спільні утиліти для scripts/check-*.mjs. Без залежностей: лише node:fs і node:path.
+// (Назви тестів розбирає scripts/lib/test-titles.mjs — йому потрібен devDependency `typescript`.)
 // Корінь проєкту — поточна тека (process.cwd()), тому тести запускають скрипти у fixture-теках.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
@@ -38,31 +39,51 @@ export function walk(dir, { skip = () => false, filter = () => true } = {}) {
 export const isMarkdown = (r) => r.endsWith(".md");
 export const isArchive = (r) => /^openspec\/changes\/archive(\/|$)/.test(r);
 
-// Сценарії (#### Scenario: …) у markdown-файлі.
-// removed = true, якщо сценарій стоїть у секції «## REMOVED Requirements».
-export function parseScenarios(file) {
+// Тип секції дельти: «## ADDED Requirements» → "ADDED" тощо; у канонічній специфікації — "".
+export function deltaKind(section) {
+  const m = section.match(/^(ADDED|MODIFIED|REMOVED|RENAMED)\s+Requirements\b/i);
+  return m ? m[1].toUpperCase() : "";
+}
+
+// Розбір markdown-специфікації: сценарії (#### Scenario: …) і заголовки вимог (### Requirement: …)
+// разом із секцією (## …), у якій вони стоять. removed = true для секції «## REMOVED Requirements».
+export function parseSpecFile(file) {
   const lines = readText(file).split("\n");
-  const result = [];
+  const scenarios = [];
+  const requirements = [];
   let section = "";
+  let requirement = null;
   let inFence = false;
   lines.forEach((line, i) => {
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
     if (inFence) return;
     const h2 = line.match(/^##\s+(.*)$/);
-    if (h2) section = h2[1].trim();
+    if (h2) {
+      section = h2[1].trim();
+      requirement = null;
+    }
+    const req = line.match(/^###\s+Requirement:\s*(.*)$/);
+    if (req) {
+      requirement = req[1].trim();
+      requirements.push({ name: requirement, kind: deltaKind(section), line: i + 1 });
+    }
     const scenario = line.match(/^(#{1,6})\s+Scenario:\s*(.*)$/);
     if (scenario) {
-      result.push({
+      scenarios.push({
         file,
         line: i + 1,
         level: scenario[1].length,
         title: scenario[2].trim(),
-        removed: /^REMOVED\s+Requirements/i.test(section),
+        kind: deltaKind(section),
+        requirement,
+        removed: deltaKind(section) === "REMOVED",
       });
     }
   });
-  return result;
+  return { scenarios, requirements, text: lines.join("\n") };
 }
+
+export const parseScenarios = (file) => parseSpecFile(file).scenarios;
 
 export function acIdOf(title) {
   const m = title.match(AC_ID_AT_START);
@@ -108,40 +129,11 @@ export function parseConformance(file = path.join(root(), "docs", "conformance.m
   return { exists: true, rows };
 }
 
-// Назви тестів test()/it() з файлів коду. Пропущені (.skip/.todo/.fixme/.fails/.skipIf) не рахуються.
-const TEST_CALL =
-  /(?<![\w.$])(?:it|test)(?:\.(only|concurrent|sequential|skip|todo|fixme|fails|skipIf|runIf|describe|each|for|extend|step|beforeEach|afterEach|beforeAll|afterAll|use)\b(?:\([^)]*\))?)?\s*\(\s*(["'`])((?:\\.|(?!\2)[^\\])*)\2/g;
-const COUNTED = new Set([undefined, "only", "concurrent", "sequential"]);
-
-export function parseTestTitles(file) {
-  const text = readText(file);
-  const titles = [];
-  for (const m of text.matchAll(TEST_CALL)) {
-    const modifier = m[1];
-    const line = text.slice(0, m.index).split("\n").length;
-    titles.push({ title: m[3], counted: COUNTED.has(modifier), modifier, line });
-  }
-  return titles;
-}
-
-export const isCodeFile = (r) => /\.(?:[cm]?[jt]sx?)$/.test(r);
-export const skipNonSource = (r) =>
-  /(^|\/)(node_modules|\.next|\.git|coverage|dist|build)(\/|$)/.test(r) || /^tests\/fixtures(\/|$)/.test(r);
-
-export function collectTestRefs(dirs = ["src", "tests"]) {
-  const refs = new Map(); // id → [{file, line, title, counted}]
-  for (const d of dirs) {
-    for (const file of walk(path.join(root(), d), { skip: skipNonSource, filter: isCodeFile })) {
-      for (const t of parseTestTitles(file)) {
-        for (const id of t.title.match(AC_ID_GLOBAL) ?? []) {
-          if (!refs.has(id)) refs.set(id, []);
-          refs.get(id).push({ file: rel(file), line: t.line, title: t.title, counted: t.counted });
-        }
-      }
-    }
-  }
-  return refs;
-}
+// Статус рядка матриці: рівно «реалізовано» або «відкладено (причина)» (регістр і `…` не важать).
+// «Реалізовано частково», «реалізовано?» тощо — невідомий статус (BAD-STATUS), а не «реалізовано».
+const normalizeStatus = (status) => status.replace(/`/g, "").trim().toLowerCase();
+export const isImplemented = (status) => /^реалізовано$/.test(normalizeStatus(status));
+export const isDeferred = (status) => /^відкладено\s*\(.*\S.*\)$/.test(normalizeStatus(status));
 
 export function printList(label, items) {
   if (!items.length) return;

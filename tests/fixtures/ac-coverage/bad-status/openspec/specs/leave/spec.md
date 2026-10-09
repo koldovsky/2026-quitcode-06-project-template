@@ -9,3 +9,7 @@ The system SHALL accept a demo request.
 #### Scenario: AC-DEMO-02 Reject an empty request
 - **WHEN** an empty request is submitted
 - **THEN** it is rejected
+
+#### Scenario: AC-DEMO-03 Partial
+- **WHEN** x
+- **THEN** y
