@@ -25,7 +25,9 @@
 
 ## Зміна (proposal.md)
 
-12. **[блокер] Розділи:** Why, What Changes, Users & roles, Non-goals, Assumptions, Open questions.
+12. **[блокер] Розділи:** Why, What Changes, Capabilities (New / Modified — з шаблону OpenSpec; кожна
+    можливість має свою дельту `specs/<capability>/spec.md`), Users & roles, Non-goals, Assumptions,
+    Open questions. Impact — необов'язковий (лише вплив на продукт, без коду); його відсутність — не блокер.
 13. **Один намір.** Зміну можна описати одним реченням; інакше — розбити.
 14. **Non-goals** — справжні виключення (те, що могло б бути метою), а не заперечення.
 15. **Open questions** перед релізом: або мають відповідь і внесені у вимоги, або свідомо залишені
