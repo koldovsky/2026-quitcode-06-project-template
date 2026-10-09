@@ -81,7 +81,7 @@ create policy profiles_update_own
   using (id = (select auth.uid()))
   with check (id = (select auth.uid()));
 
--- ── Профіль під час реєстрації ──────────────────────────────────────────────
+-- ── Профіль для кожного нового користувача Auth (npm run users:demo, Admin API) ──
 create or replace function private.handle_new_user()
 returns trigger
 language plpgsql
