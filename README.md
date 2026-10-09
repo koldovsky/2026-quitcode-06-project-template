@@ -83,13 +83,16 @@
    наступну (крок 8): `git fetch upstream --tags` → `git switch -c sync/spec-v0.1` → `git merge spec-v0.1` →
    розкоментуйте `.spec-source` (`upstream: <pm>/<team-repo>`, `version: spec-v0.1`) → `npm run spec:source` (OK) →
    рядок у `docs/conformance.md` для кожного AC (ще не зроблене — `відкладено (причина)`) → `npm run ac:coverage` →
-   PR у форку. Потім скіл `spec-clarify` → питання як issues в upstream → журнал у `docs/spec-reading.md`.
+   PR у форку, злитий кнопкою **Create a merge commit** (не Squash і не Rebase: тег має бути в історії `main`,
+   інакше наступна синхронізація дасть конфлікти в `product/`). Потім скіл `spec-clarify` → питання як issues в upstream → журнал у `docs/spec-reading.md`.
 7. **Реалізація:** `npx openspec new change impl-<зріз>` з `skip_specs: true` у `.openspec.yaml`, `design.md`,
    `tasks.md` («Done when: AC-…») → гілка → код + тести `it("AC-…: …")` → `/conformance` → PR у форку
    (CI зелений, `@coderabbitai review`). В останньому PR зрізу, **до merge**, `npx openspec archive impl-<зріз> -y`
    у тій самій гілці (ruleset не пускає прямі коміти в `main`) → merge.
 8. **Нова версія спеки:** `git fetch upstream --tags` → `git switch -c sync/spec-v0.2` → `git merge spec-v0.2` →
-   оновити `.spec-source` → нові AC у `docs/conformance.md` → PR. Докази бутстрапу — у `docs/bootstrap.md`.
+   оновити `.spec-source` → нові AC у `docs/conformance.md` → PR → **Create a merge commit**. Якщо попередній
+   sync-PR злили squash-ем і merge дав конфлікти в `product/` чи `openspec/specs/`, беріть версію тегу:
+   `git checkout --theirs -- product openspec/specs`. Докази бутстрапу — у `docs/bootstrap.md`.
 
 ## Перевірки
 

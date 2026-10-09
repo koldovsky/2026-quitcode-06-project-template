@@ -11,3 +11,4 @@ test.for([[1]])("AC-DEMO-06: for %s", () => {});
 describe.skip("a skipped group", () => {
   it("AC-DEMO-08: never runs inside describe.skip", () => {});
 });
+test.fail("AC-DEMO-09: Playwright test.fail is expected to fail, so it does not count", () => {});

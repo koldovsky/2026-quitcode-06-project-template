@@ -4,7 +4,7 @@
 //   - `//` чи `/*` всередині рядка назви не ламають розбір;
 //   - ланцюжки модифікаторів розпізнаються будь-якої довжини: it.each([...])("…"), test.concurrent.each(...)("…"),
 //     test.for(...)("…"), it.runIf(cond)("…"), test.only(...).
-// Пропущений тест (counted = false): у ланцюжку є skip / todo / fixme / fails / skipIf
+// Пропущений тест (counted = false): у ланцюжку є skip / todo / fixme / fails / fail (Playwright) / skipIf
 // або тест лежить усередині describe.skip / describe.todo / describe.skipIf (Vitest і Playwright).
 // Не тест (ігнорується): describe(…), test.step(…), test.extend(…), test.use(…), хуки beforeEach тощо.
 import { createRequire } from "node:module";
@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const ts = require("typescript");
 
 const TEST_ROOTS = new Set(["it", "test"]);
-const SKIP_MODIFIERS = new Set(["skip", "todo", "fixme", "fails", "skipIf"]);
+const SKIP_MODIFIERS = new Set(["skip", "todo", "fixme", "fails", "fail", "skipIf"]);
 const NOT_A_TEST = new Set([
   "describe",
   "step",

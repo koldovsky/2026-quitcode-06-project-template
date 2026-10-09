@@ -16,7 +16,7 @@ context: |
 
 rules:
   proposal:
-    - "Розділи proposal.md у такому порядку: ## Why, ## What Changes, ## Capabilities (з шаблону OpenSpec: ### New Capabilities і ### Modified Capabilities; для кожної можливості — свій specs/<capability>/spec.md), ## Users & roles, ## Non-goals, ## Assumptions, ## Open questions; ## Impact — необов'язково, останнім і лише на рівні продукту (які ролі, процеси й інші можливості зачеплено), без коду й API."
+    - "Розділи proposal.md у такому порядку: ## Why, ## What Changes, ## Capabilities (з шаблону OpenSpec: ### New Capabilities і ### Modified Capabilities; для кожної можливості — свій specs/<capability>/spec.md), ## Users & roles, ## Non-goals, ## Assumptions, ## Open questions; ## Impact — необов'язково (де його ставить шаблон OpenSpec) і лише на рівні продукту (які ролі, процеси й інші можливості зачеплено), без коду й API."
     - "Why — проблема користувача й цінність зрізу (2–5 речень), без опису реалізації."
     - "What Changes — список змін поведінки; для кожної нової або зміненої вимоги вкажіть її AC ID."
     - "Users & roles — хто з ролей у product/roles.md що робить у цьому зрізі; права у вигляді таблиці роль × сутність × дія."

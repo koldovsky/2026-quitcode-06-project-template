@@ -34,7 +34,7 @@ describe("scripts/check-ac-coverage.mjs", () => {
     expect(out).toContain("AC-DEMO-42");
   });
 
-  it("ignores commented-out tests and skipped describe blocks but counts .each, .for, .concurrent and .runIf", () => {
+  it("ignores commented-out tests, test.fail and skipped describe blocks but counts .each, .for, .concurrent and .runIf", () => {
     const { code, out } = run("test-forms");
     expect(code).toBe(1);
     const missing = out.slice(out.indexOf("MISSING"), out.indexOf("FAIL"));
@@ -42,12 +42,14 @@ describe("scripts/check-ac-coverage.mjs", () => {
     expect(missing).toContain("AC-DEMO-01");
     expect(missing).toContain("AC-DEMO-02");
     expect(missing).toMatch(/AC-DEMO-08 .*є лише пропущені/);
+    // Playwright test.fail(title, …) очікувано падає — не покриття.
+    expect(missing).toMatch(/AC-DEMO-09 .*є лише пропущені/);
     // `//` і `/*` усередині назви не ламають розбір; .each/.for/.concurrent.each/.runIf і «Реалізовано» з великої — рахуються.
     for (const id of ["AC-DEMO-03", "AC-DEMO-04", "AC-DEMO-05", "AC-DEMO-06", "AC-DEMO-07"]) {
       expect(missing).not.toContain(id);
     }
     expect(out).not.toContain("ORPHAN");
-    expect(out).toContain("проблем — 3");
+    expect(out).toContain("проблем — 4");
   });
 
   it("reports BAD-STATUS for unknown statuses, deferrals without a reason and «Реалізовано частково»", () => {

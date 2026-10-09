@@ -10,3 +10,4 @@
 | AC-DEMO-07 | case | — | `tests/forms.test.ts` | реалізовано |
 | AC-DEMO-08 | case | — | `tests/forms.test.ts` | реалізовано |
 | AC-DEMO-03 | case | — | `tests/forms.test.ts` | Реалізовано |
+| AC-DEMO-09 | case | — | `tests/forms.test.ts` | реалізовано |
