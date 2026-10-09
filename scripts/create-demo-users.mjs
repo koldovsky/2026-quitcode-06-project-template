@@ -109,4 +109,4 @@ if (failed) {
   );
   process.exit(1);
 }
-console.log(`\nГотово: ${users.length} користувачів. Пароль — значення DEMO_USER_PASSWORD (у консоль не виводимо).`);
+console.log(`\nГотово, користувачів: ${users.length}. Пароль — значення DEMO_USER_PASSWORD (у консоль не виводимо).`);
