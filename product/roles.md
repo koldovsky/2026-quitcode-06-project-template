@@ -2,7 +2,8 @@
 
 <!--
 Заповнює PM. Ролі мають збігатися зі значеннями колонки profiles.role у базі
-(у шаблоні: member, admin — проєкт замінює їх своєю міграцією з constraint profiles_role_check).
+(у шаблоні: member, admin — розробник замінює їх своєю міграцією: дані → default колонки role → новий
+constraint profiles_role_check; порядок — у заголовку supabase/migrations/20261012000000_profiles_and_roles.sql).
 Кожна клітинка матриці стає політикою RLS і критерієм приймання (AC) з тестом.
 -->
 
