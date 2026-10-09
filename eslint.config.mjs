@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Дані для тестів скриптів (навмисно «зламані» файли).
+    "tests/fixtures/**",
   ]),
 ]);
 
