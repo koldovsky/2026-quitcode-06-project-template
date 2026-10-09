@@ -17,7 +17,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Node 24.x · Next.js 16.4 (App Router, `src/`, без Cache Components) · React 19.3 · TypeScript ^5 · ESLint ^9 ·
 Tailwind 4 · `@supabase/supabase-js` 2.117 + `@supabase/ssr` 0.12 · Supabase CLI 2.120 (devDependency) ·
-OpenSpec 1.14 (devDependency, `npx openspec …`) · Vitest 5 · Vercel Hobby.
+OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версії) · Vitest 5 · Vercel Hobby.
 Не «оновлюй усе до latest»: TypeScript 7 і ESLint 10 цей шаблон не перевіряв.
 
 ## Команди
@@ -28,6 +28,9 @@ OpenSpec 1.14 (devDependency, `npx openspec …`) · Vitest 5 · Vercel Hobby.
 - `npx supabase migration new <назва>` → `npx supabase db push --dry-run` → `npm run db:push` → `npm run db:types`
   (`db:types` — лише після `supabase link`; якщо впав — `git restore src/lib/supabase/database.types.ts`)
 - `npm run users:demo` — синтетичні користувачі з `supabase/demo-users.json`
+- `openspec …` (його викликають `/opsx:*` і скіли `openspec-*`): якщо `openspec` не знайдено або
+  `openspec --version` ≠ 1.14.1 — запускай `npx openspec …` (версія з package.json) і скажи людині
+  встановити `npm i -g @fission-ai/openspec@1.14.1`
 
 ## Структура
 
@@ -44,11 +47,14 @@ OpenSpec 1.14 (devDependency, `npx openspec …`) · Vitest 5 · Vercel Hobby.
 
 - `product/` і `openspec/specs/` належать PM і змінюються лише в upstream. У форку їх не редагуй:
   розробник пропонує зміну спеки тільки PR-ом в upstream або питанням (issue `spec-question`, скіл `spec-clarify`).
-- Одна OpenSpec-зміна — один намір. PM: `proposal.md` + дельта-спека → `spec-review` → archive → тег `spec-vX.Y`.
-  Розробник: своя зміна `impl-<зріз>` з `skip_specs: true`, `design.md` і `tasks.md` («Done when: AC-…»).
+- Одна OpenSpec-зміна — один намір. PM: `proposal.md` + дельта-спека → `spec-review` → PR → archive у гілці
+  зміни (до merge: прямі коміти в `main` заборонені) → merge → тег `spec-vX.Y`.
+  Розробник: своя зміна `impl-<зріз>` з `skip_specs: true`, `design.md` і `tasks.md` («Done when: AC-…»);
+  archive — в останньому PR зрізу до merge.
 - AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`.
 - Рядок у `docs/conformance.md` оновлюється в тому самому PR, що й код (`/conformance`, `npm run ac:coverage`).
-- Нова версія спеки у форку — гілка `sync/spec-vX.Y` (merge тегу upstream) + оновити `.spec-source`.
+- Кожна версія спеки у форку, і перша теж, — гілка `sync/spec-vX.Y` (merge тегу upstream) + оновити
+  `.spec-source` + рядки нових AC у `docs/conformance.md`.
 - `/opsx:verify` і `/conformance` — порадники; ворота — CI (`spec`, `app`, `conformance`).
 
 ## База даних (Supabase)

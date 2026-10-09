@@ -34,6 +34,15 @@
 Розробник змінює специфікацію лише PR-ом в upstream або питанням (issue `spec-question`).
 Нову версію спеки забирає у форк гілкою `sync/spec-vX.Y`.
 
+## Перед початком (PM і розробники)
+
+- Node 24 (`node -v`), Git, GitHub CLI (`gh`).
+- OpenSpec CLI **глобально** й тієї ж версії, що в `package.json`:
+  `npm i -g @fission-ai/openspec@1.14.1` → `openspec --version` має показати `1.14.1`
+  (стара глобальна версія — оновіть тією ж командою). Команди `/opsx:*` і скіли `openspec-*` викликають
+  просто `openspec`, а в PATH оболонки агента немає `node_modules/.bin`. Скрипти `npm run spec:*` і CI
+  беруть версію з devDependencies. Телеметрію вимикає `openspec config set telemetry.enabled false`.
+
 ## Шлях PM
 
 1. **Upstream.** На сторінці шаблону — **Use this template → Create a new repository**, власник — ваш акаунт,
@@ -43,12 +52,12 @@
    Справжні назви клієнта — у секрет `SPEC_DENYLIST` (Settings → Secrets and variables → Actions), не в файли.
    Створіть мітку для питань розробників (форма issue ставить лише наявну мітку):
    `gh label create spec-question --repo <pm>/<team-repo> --description "Питання до специфікації"`.
-3. **Перший зріз.** `npm ci`, потім у Claude Code `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`)
+3. **Перший зріз.** `npm ci`, `openspec --version` = `1.14.1` (див. «Перед початком»), потім у Claude Code `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`)
    або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
    Формат (вимоги EARS з SHALL, `#### Scenario: AC-<AREA>-<NN> …`) агент бере з `openspec/config.yaml`.
 4. **Перевірка.** `npm run spec:validate`, `npm run spec:check`, скіл `spec-review`.
-5. **Реліз.** PR зі зміною → рев'ю команди → у тій самій гілці `npx openspec archive add-<зріз> -y` і запис
-   у `product/CHANGELOG.md` (ruleset не пускає прямі коміти в `main`) → merge →
+5. **Реліз.** PR зі зміною → рев'ю команди → у тій самій гілці, **до merge**, `npx openspec archive add-<зріз> -y`
+   і запис у `product/CHANGELOG.md` (ruleset не пускає прямі коміти в `main`) → merge →
    `git switch main && git pull && git tag spec-v0.1 && git push origin spec-v0.1`.
 6. **Питання розробників.** Відповідайте в issues `spec-question`; рішення — у `product/decisions.md`;
    якщо змінюється поведінка — нова зміна (MODIFIED/ADDED) і тег `spec-v0.2`.
@@ -59,7 +68,8 @@
    `git clone https://github.com/<я>/<team-repo>.git` → `gh repo set-default <я>/<team-repo>`
    (інакше `gh pr create` цілить в upstream) → `git remote add upstream https://github.com/<pm>/<team-repo>.git`.
    Ruleset на `main` (PR + статуси `spec`, `app`, `conformance`).
-2. **Залежності:** Node 24 (`node -v`), `npm ci`, `npm run typecheck`, `npm test`.
+2. **Залежності:** Node 24 (`node -v`), `openspec --version` = `1.14.1` (див. «Перед початком»), `npm ci`,
+   `npm run typecheck`, `npm test`.
 3. **Supabase** (власна організація, не через Vercel Marketplace): створіть проєкт; Authentication →
    Sign In / Providers → Email → вимкніть Confirm email; `npx supabase login` → `npx supabase link --project-ref <ref>` →
    `npx supabase db push --dry-run` → `npm run db:push` → `npm run db:types`.
@@ -69,11 +79,15 @@
    Supabase → Authentication → URL Configuration: Site URL = прод-URL, Redirect URLs `http://localhost:3000/**`
    і `https://*-<slug>.vercel.app/**`. Для навчальних проєктів вимкніть Vercel Authentication на preview.
 5. **Секрети CI** (для job `db`): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`.
-6. **Специфікація:** після тегу PM розкоментуйте `.spec-source` (`upstream`, `version`) → `npm run spec:source`.
-   Скіл `spec-clarify` → питання як issues в upstream → журнал у `docs/spec-reading.md`.
+6. **Перша версія спеки.** Форк зроблено до тегу `spec-v0.1`, тож забирайте її тим самим потоком, що й кожну
+   наступну (крок 8): `git fetch upstream --tags` → `git switch -c sync/spec-v0.1` → `git merge spec-v0.1` →
+   розкоментуйте `.spec-source` (`upstream: <pm>/<team-repo>`, `version: spec-v0.1`) → `npm run spec:source` (OK) →
+   рядок у `docs/conformance.md` для кожного AC (ще не зроблене — `відкладено (причина)`) → `npm run ac:coverage` →
+   PR у форку. Потім скіл `spec-clarify` → питання як issues в upstream → журнал у `docs/spec-reading.md`.
 7. **Реалізація:** `npx openspec new change impl-<зріз>` з `skip_specs: true` у `.openspec.yaml`, `design.md`,
    `tasks.md` («Done when: AC-…») → гілка → код + тести `it("AC-…: …")` → `/conformance` → PR у форку
-   (CI зелений, `@coderabbitai review`) → merge → archive.
+   (CI зелений, `@coderabbitai review`). В останньому PR зрізу, **до merge**, `npx openspec archive impl-<зріз> -y`
+   у тій самій гілці (ruleset не пускає прямі коміти в `main`) → merge.
 8. **Нова версія спеки:** `git fetch upstream --tags` → `git switch -c sync/spec-v0.2` → `git merge spec-v0.2` →
    оновити `.spec-source` → нові AC у `docs/conformance.md` → PR. Докази бутстрапу — у `docs/bootstrap.md`.
 
@@ -83,8 +97,8 @@
 |---|---|
 | `npm run lint` / `typecheck` / `test` / `build` | ESLint без попереджень, типи (`next typegen` + `tsc`), Vitest, збірка з `ƒ Proxy (Middleware)` |
 | `npm run spec:validate` | `openspec validate --all --strict` — структура специфікацій |
-| `npm run spec:check` | AC ID на початку кожного `#### Scenario:`, унікальність у `openspec/specs`, denylist |
-| `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; «реалізовано» має непропущений тест з ID; тести не посилаються на неіснуючі AC |
+| `npm run spec:check` | AC ID на початку кожного `#### Scenario:`; унікальність у `openspec/specs` і після archive кожної активної зміни; denylist (за початком слова, тож ловить відмінки) |
+| `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; статус дослівно «реалізовано» або «відкладено (причина)»; «реалізовано» має непропущений і не закоментований тест з ID у назві; тести не посилаються на неіснуючі AC |
 | `npm run spec:source` | у форку `product/` і `openspec/specs/` збігаються з тегом upstream із `.spec-source` |
 
 ## Як цей шаблон зібрано з нуля
@@ -119,7 +133,9 @@ npx supabase init
 #   additional_redirect_urls = ["http://localhost:3000/**"]; [auth.email] enable_confirmations = false
 # supabase/migrations/20261012000000_profiles_and_roles.sql, supabase/seed.sql, supabase/demo-users.json
 
-# 4. OpenSpec: профіль custom з verify (глобальний конфіг цієї машини), потім init
+# 4. OpenSpec: глобальний CLI тієї ж версії (його викликають /opsx:* і скіли), профіль custom з verify
+#    (глобальний конфіг цієї машини), потім init
+npm i -g @fission-ai/openspec@1.14.1 && openspec --version   # 1.14.1
 export OPENSPEC_TELEMETRY=0
 npx openspec config set profile custom
 npx openspec config set workflows '["propose","explore","apply","verify","update","sync","archive"]'
