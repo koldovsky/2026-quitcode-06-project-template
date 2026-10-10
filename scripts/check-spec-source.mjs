@@ -6,12 +6,14 @@
 //   version: spec-v0.1            # тег релізу специфікації
 //
 // Кроки: git fetch https://github.com/<owner>/<repo>.git refs/tags/<version> →
-//        git diff --quiet <version> -- product openspec/specs
+//        git diff --quiet <version> -- product openspec/specs →
+//        git ls-remote --tags: якщо в upstream уже є новіший spec-vX.Y — попередження (не помилка).
 // У самому upstream (немає .spec-source, усі рядки закоментовані або upstream == цей репозиторій)
 // перевірку пропускаємо з повідомленням (у GitHub Actions — з попередженням). SPEC_SOURCE_REQUIRED=1 робить
-// відсутній .spec-source помилкою (вмикайте в CI форку, коли перший тег спеки вже є). SPEC_SOURCE_URL перевизначає адресу (тести, дзеркала).
+// відсутній .spec-source помилкою. SPEC_SOURCE_IN_FORK=1 (job conformance у форку) — FAIL, якщо upstream — сам форк
+// або спека вже у форку, а .spec-source закоментований. SPEC_SOURCE_URL перевизначає адресу (тести, дзеркала).
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import fs, { existsSync } from "node:fs";
 import path from "node:path";
 import { readText, root } from "./lib/spec-lib.mjs";
 
@@ -64,12 +66,33 @@ const file = path.join(root(), ".spec-source");
 if (!existsSync(file)) skip("файлу .spec-source немає (upstream PM або форк ще не налаштовано).", { requiredInFork: true });
 
 const { upstream, version } = parseSpecSource(file);
-if (!upstream && !version) skip(".spec-source порожній або закоментований (upstream PM або форк до першого релізу спеки).", { requiredInFork: true });
+// CI форку (job conformance) задає SPEC_SOURCE_IN_FORK=1; в upstream PM і в одному репозиторії з APP_REPO — ні.
+const inFork = process.env.SPEC_SOURCE_IN_FORK === "1";
+const hasSpecs = () => {
+  const dir = path.join(root(), "openspec", "specs");
+  return existsSync(dir) && fs.readdirSync(dir, { recursive: true }).some((p) => String(p).endsWith("spec.md"));
+};
+if (!upstream && !version) {
+  // Спека вже у форку (тег злито) — .spec-source мусить бути заповнений, інакше перевірка нічого не перевіряє.
+  if (inFork && hasSpecs()) {
+    fail(
+      ".spec-source закоментований, а openspec/specs/ уже містить спеку. Розкоментуйте upstream: <pm>/<team-repo> " +
+        "і version: spec-vX.Y (README, «Шлях розробника», крок 6).",
+    );
+  }
+  skip(".spec-source порожній або закоментований (upstream PM або форк до першого релізу спеки).", { requiredInFork: true });
+}
 if (!upstream || !/^[\w.-]+\/[\w.-]+$/.test(upstream)) fail(`у .spec-source потрібен рядок "upstream: <owner>/<repo>", а є "${upstream ?? ""}".`);
 if (!version || !/^spec-v\d+\.\d+$/.test(version)) fail(`у .spec-source потрібен рядок "version: spec-vX.Y", а є "${version ?? ""}".`);
 
 const own = ownRepo();
-if (own && own.toLowerCase() === upstream.toLowerCase()) skip(`це сам upstream (${own}).`);
+if (own && own.toLowerCase() === upstream.toLowerCase()) {
+  // У форку upstream не може бути самим форком: тоді перевірка порівнювала б форк сам із собою.
+  if (inFork || process.env.SPEC_SOURCE_REQUIRED === "1") {
+    fail(`у .spec-source upstream: ${upstream} — це сам цей репозиторій. У форку вкажіть репозиторій PM: "upstream: <pm>/<team-repo>".`);
+  }
+  skip(`це сам upstream (${own}).`);
+}
 
 const url = process.env.SPEC_SOURCE_URL || `https://github.com/${upstream}.git`;
 try {
@@ -84,7 +107,7 @@ try {
   if (e.status === 1) {
     const stat = git(["diff", "--stat", version, "--", ...PATHS]);
     const sync =
-      `Синхронізація: git fetch upstream --tags → git switch -c sync/${version} → git merge ${version} ` +
+      `Синхронізація: git fetch upstream --tags → git switch -c sync/${version} → git merge --no-edit ${version} ` +
       `→ рядки нових AC у docs/conformance.md → PR у форку.`;
     // Чи тег уже злитий у цю гілку? 1 — ні (форк просто ще не синхронізовано), 0 — так (файли змінено у форку).
     let merged = null;
@@ -109,3 +132,24 @@ try {
 }
 
 console.log(`spec:source — OK: ${PATHS.join(" і ")} збігаються з ${upstream}@${version}.`);
+
+// Новіша версія спеки в upstream? Лише попередження (не помилка): синхронізація — окремим PR sync/spec-vX.Y,
+// а без цього рядка форк на старому тезі лишається зеленим і ніхто не помічає, що PM уже випустив нову версію.
+const num = (tag) => tag.replace(/^spec-v/, "").split(".").map(Number);
+const isNewer = (a, b) => (a[0] !== b[0] ? a[0] > b[0] : a[1] > b[1]);
+try {
+  const latest = git(["ls-remote", "--tags", "--refs", url, "refs/tags/spec-v*"])
+    .split("\n")
+    .map((line) => line.split("refs/tags/")[1]?.trim())
+    .filter((tag) => tag && /^spec-v\d+\.\d+$/.test(tag))
+    .reduce((best, tag) => (isNewer(num(tag), num(best)) ? tag : best), version);
+  if (latest !== version) {
+    const msg =
+      `в ${upstream} уже є ${latest}, а .spec-source вказує ${version}. ` +
+      `Синхронізуйтесь: гілка sync/${latest} (README, «Шлях розробника», крок 8).`;
+    console.log(`spec:source — УВАГА: ${msg}`);
+    if (process.env.GITHUB_ACTIONS === "true") console.log(`::warning title=spec:source::${msg}`);
+  }
+} catch {
+  // ls-remote недоступний (мережа) — перевірку новішої версії пропускаємо, основна вже пройшла.
+}

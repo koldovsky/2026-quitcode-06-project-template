@@ -23,7 +23,7 @@ const write = (base: string, file: string, text: string) => {
   writeFileSync(path.join(base, file), text);
 };
 
-const env = { SPEC_SOURCE_URL: "", GITHUB_REPOSITORY: "", SPEC_SOURCE_REQUIRED: "" };
+const env = { SPEC_SOURCE_URL: "", GITHUB_REPOSITORY: "", SPEC_SOURCE_REQUIRED: "", SPEC_SOURCE_IN_FORK: "" };
 const run = (cwd: string, extra: Record<string, string> = {}) =>
   runScript("check-spec-source.mjs", cwd, { ...env, SPEC_SOURCE_URL: upstream, ...extra });
 
@@ -59,6 +59,21 @@ describe("scripts/check-spec-source.mjs", () => {
     expect(out).toContain("SKIP");
   });
 
+  it("fails when .spec-source is commented out but the fork already has specs (SPEC_SOURCE_IN_FORK=1)", () => {
+    const { code, out } = run(fork, { SPEC_SOURCE_IN_FORK: "1" });
+    expect(code).toBe(1);
+    expect(out).toContain("FAIL");
+    expect(out).toContain("openspec/specs/");
+  });
+
+  it("still skips a commented .spec-source in a fork without specs (before the first tag)", () => {
+    const empty = path.join(tmp, "empty-fork");
+    write(empty, ".spec-source", "# upstream: owner/team-repo\n# version: spec-v0.1\n");
+    const { code, out } = run(empty, { SPEC_SOURCE_IN_FORK: "1" });
+    expect(code).toBe(0);
+    expect(out).toContain("SKIP");
+  });
+
   it("fails without .spec-source when SPEC_SOURCE_REQUIRED=1 (fork CI)", () => {
     const { code, out } = run(fork, { SPEC_SOURCE_REQUIRED: "1" });
     expect(code).toBe(1);
@@ -70,6 +85,20 @@ describe("scripts/check-spec-source.mjs", () => {
     const { code, out } = run(fork, { GITHUB_REPOSITORY: "pm-owner/team-repo" });
     expect(code).toBe(0);
     expect(out).toContain("SKIP");
+  });
+
+  it("fails when upstream names the fork itself in fork CI (SPEC_SOURCE_IN_FORK=1)", () => {
+    write(fork, ".spec-source", "upstream: Dev-Owner/Team-Repo\nversion: spec-v0.1\n");
+    const { code, out } = run(fork, { GITHUB_REPOSITORY: "dev-owner/team-repo", SPEC_SOURCE_IN_FORK: "1" });
+    expect(code).toBe(1);
+    expect(out).toContain("FAIL");
+  });
+
+  it("fails when upstream names the fork itself and SPEC_SOURCE_REQUIRED=1", () => {
+    write(fork, ".spec-source", "upstream: dev-owner/team-repo\nversion: spec-v0.1\n");
+    const { code, out } = run(fork, { GITHUB_REPOSITORY: "dev-owner/team-repo", SPEC_SOURCE_REQUIRED: "1" });
+    expect(code).toBe(1);
+    expect(out).toContain("FAIL");
   });
 
   it("passes when product and canonical specs match the tag", () => {
@@ -98,8 +127,17 @@ describe("scripts/check-spec-source.mjs", () => {
     expect(code).toBe(1);
     expect(out).toContain("product/vision.md");
     expect(out).toContain("ще не злитий");
-    expect(out).toContain("git merge spec-v0.2");
+    expect(out).toContain("git merge --no-edit spec-v0.2");
     expect(out).not.toContain("уже злитий");
+  });
+
+  it("passes but warns when upstream already has a newer spec tag", () => {
+    write(fork, ".spec-source", "upstream: pm-owner/team-repo\nversion: spec-v0.1\n");
+    const { code, out } = run(fork, { GITHUB_REPOSITORY: "dev-owner/team-repo" });
+    expect(code).toBe(0);
+    expect(out).toContain("OK");
+    expect(out).toContain("УВАГА");
+    expect(out).toContain("spec-v0.2");
   });
 
   it("fails when the tag does not exist upstream", () => {
