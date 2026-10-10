@@ -267,7 +267,7 @@ for (const dir of [changesDir, path.join(changesDir, "archive")]) {
   for (const name of changeDirs(dir)) {
     const full = path.join(dir, name);
     const meta = path.join(full, ".openspec.yaml");
-    if (existsSync(meta) && /^skip_specs:\s*true\s*$/m.test(readText(meta))) continue;
+    if (existsSync(meta) && /^skip_specs:\s*true\b/m.test(readText(meta))) continue;
     const proposal = path.join(full, "proposal.md");
     const headings = existsSync(proposal)
       ? readText(proposal)
@@ -285,7 +285,8 @@ for (const dir of [changesDir, path.join(changesDir, "archive")]) {
     }
     if (gap) {
       errors.proposal.push(
-        `${rel(full)} — бракує ${gap} (порядок: Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions)`,
+        `${rel(full)} — бракує ${gap} (порядок: Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions; ` +
+          `зміна розробника — додайте skip_specs: true у .openspec.yaml)`,
       );
     }
   }
@@ -302,7 +303,7 @@ printList("DUPLICATE: AC ID повторюється в openspec/specs", errors.
 printList("DUPLICATE-CHANGE: активна зміна дасть дубль AC ID після archive", errors.changeDuplicate);
 printList("DENYLIST: заборонене слово (анонімізація)", errors.denylist);
 printList("STRAY-DENYLIST: локальний denylist під іншим іменем (spec:check його не читає)", errors.stray);
-printList("PROPOSAL: зміна PM без proposal.md або без розділу з правил openspec/config.yaml", errors.proposal);
+printList("PROPOSAL: зміна без skip_specs (зміна PM) без proposal.md або без розділу з правил openspec/config.yaml", errors.proposal);
 if (total) {
   console.log(`\nFAIL: помилок — ${total}.`);
   process.exit(1);

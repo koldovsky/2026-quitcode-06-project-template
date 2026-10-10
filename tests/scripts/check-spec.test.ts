@@ -102,6 +102,7 @@ describe("scripts/check-spec.mjs", () => {
     expect(out).toContain("openspec/changes/no-proposal — бракує proposal.md");
     expect(out).toContain("openspec/changes/wrong-order — бракує розділу «Assumptions»");
     expect(out).not.toContain("impl-demo");
+    expect(out).not.toContain("impl-commented");
     expect(out).not.toContain("archive/2026-10-09-add-demo");
     expect(out).toContain("помилок — 2");
   });

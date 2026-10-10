@@ -29,8 +29,13 @@ function skip(reason, { requiredInFork = false } = {}) {
   }
   console.log(`spec:source — SKIP: ${reason}`);
   // У GitHub Actions форку — помітне попередження: до першого тегу spec-v0.1 це нормально.
+  // У репозиторії без форку (ci.yml задає SPEC_SOURCE_IN_FORK=0, APP_REPO=true) .spec-source не потрібен.
   if (requiredInFork && process.env.GITHUB_ACTIONS === "true") {
-    console.log(`::warning title=spec:source::${reason} Заповніть .spec-source після першого релізу специфікації.`);
+    const next =
+      process.env.SPEC_SOURCE_IN_FORK === "0"
+        ? "Репозиторій не форк (APP_REPO): .spec-source не потрібен, перевірку пропущено."
+        : "Заповніть .spec-source після першого релізу специфікації.";
+    console.log(`::warning title=spec:source::${reason} ${next}`);
   }
   process.exit(0);
 }

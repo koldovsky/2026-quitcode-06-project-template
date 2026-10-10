@@ -56,7 +56,7 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
   merge (merge commit) → `git switch main && git pull` → `git tag spec-vX.Y` → `git push origin spec-vX.Y`.
   Розробник: своя зміна `impl-<зріз>` з `skip_specs: true`, `design.md` і `tasks.md` («Done when: AC-…»);
   archive — в останньому PR зрізу до merge.
-- AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`. Тести — лише у файлах `*.test.ts` / `*.test.tsx` під `src/` або `tests/`: інші файли (зокрема `*.spec.ts`) Vitest не запускає, і `ac:coverage` їх не рахує.
+- AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`. Тести — лише у файлах `*.test.ts` / `*.test.tsx` під `src/` або `tests/`: інші файли (зокрема `*.spec.ts`) Vitest не запускає, і `ac:coverage` їх не рахує. Перевірки в тестах — через `expect(…)`: `vitest.config.mts` вимагає хоча б один `expect` у кожному тесті, а `assert` (з `vitest` чи `node:assert`) не рахується — такий тест падає з «expected any number of assertion, but got none».
 - Рядок у `docs/conformance.md` оновлюється в тому самому PR, що й код (`/conformance`, `npm run ac:coverage`).
 - Кожна версія спеки у форку, і перша теж, — гілка `sync/spec-vX.Y` (merge тегу upstream) + оновити
   `.spec-source` + рядки нових AC у `docs/conformance.md`.
@@ -86,7 +86,7 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - `.claude/settings.json` забороняє Claude Code читати `.env*` (крім `.env.example`); Cursor цих правил не читає — у Cursor не відкривай `.env*` агентом і не вставляй значень у чат. Скрипти з секретами запускай
   як `node --env-file=.env.local …` — вони значень не друкують.
 - Supabase MCP (`.mcp.json`, лише Claude Code; Cursor бере MCP з `.cursor/mcp.json`) — лише читання, один проєкт: перед запуском задай `SUPABASE_PROJECT_REF`.
-- `product/denylist.local*` — справжні назви клієнта: не відкривай і не цитуй (у Claude Code читання заборонене в `.claude/settings.json`, у Cursor файл у `.cursorignore`).
+- `product/denylist.local*` — справжні назви клієнта: не відкривай і не цитуй (найкраще зусилля, не гарантія: у Claude Code — deny `Read(product/denylist.local*)` у `.claude/settings.json`, у Cursor — `.cursorignore`, який за документацією Cursor не закриває термінал і MCP; чи deny діє на пошук і `cat`, звіряємо на репетиції).
 
 ## Межі
 
