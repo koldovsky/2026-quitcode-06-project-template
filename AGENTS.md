@@ -83,9 +83,10 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
   лише в `.env.local` для скриптів, у Vercel (тип Secret) — тільки коли його читає серверний код застосунку.
 - Імена: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, серверний `SUPABASE_SECRET_KEY`
   (не `NEXT_PUBLIC_`, не `*_ANON_KEY`/`SERVICE_ROLE_KEY`). Шаблон — `.env.example`.
-- `.claude/settings.json` забороняє читати `.env*` (крім `.env.example`). Скрипти з секретами запускай
+- `.claude/settings.json` забороняє Claude Code читати `.env*` (крім `.env.example`); Cursor цих правил не читає — у Cursor не відкривай `.env*` агентом і не вставляй значень у чат. Скрипти з секретами запускай
   як `node --env-file=.env.local …` — вони значень не друкують.
-- Supabase MCP (`.mcp.json`) — лише читання, один проєкт: перед запуском задай `SUPABASE_PROJECT_REF`.
+- Supabase MCP (`.mcp.json`, лише Claude Code; Cursor бере MCP з `.cursor/mcp.json`) — лише читання, один проєкт: перед запуском задай `SUPABASE_PROJECT_REF`.
+- `product/denylist.local*` — справжні назви клієнта: не відкривай і не цитуй (у Claude Code читання заборонене в `.claude/settings.json`, у Cursor файл у `.cursorignore`).
 
 ## Межі
 
@@ -98,4 +99,4 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 
 **Ніколи:** не змінюй `product/` і `openspec/specs/` у форку; не редагуй застосовані міграції;
 `supabase db reset --linked`, `migration down --linked`, `migration repair`, `db push --include-all`;
-не коміть секрети й справжні дані клієнтів; не створюй `middleware.ts`; не використовуй `getSession()` для авторизації.
+не пиши секрети й справжні назви клієнтів, імена людей і їхні дані ні у файли, ні в тексти комітів, PR чи issues (`spec:check` ловить назви з denylist лише у файлах); не створюй `middleware.ts`; не використовуй `getSession()` для авторизації.

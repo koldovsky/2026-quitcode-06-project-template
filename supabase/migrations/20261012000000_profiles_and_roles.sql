@@ -3,7 +3,7 @@
 -- Правила для КОЖНОЇ міграції проєкту (див. AGENTS.md → «База даних»):
 --   1) enable row level security на кожній таблиці в public;
 --   2) revoke all from anon, authenticated, потім явні GRANT лише на потрібні операції
---      (з 30.10.2026 Supabase не видає автогрантів на нові таблиці в жодному проєкті);
+--      (нові проєкти Supabase — без автогрантів приблизно з 30.05.2026, усі — з 30.10.2026);
 --   3) окрема політика на кожну операцію, завжди `to authenticated` (або `to anon` свідомо);
 --   4) auth.uid() у політиках — лише як `(select auth.uid())`;
 --   5) security definer функції — лише у схемі private, з `set search_path = ''`.
