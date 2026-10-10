@@ -5,6 +5,9 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   test: {
     environment: "node",
+    // Тест без жодної перевірки (порожній it("AC-…", () => {})) падає: ac:coverage рахує тест, тож він має щось перевіряти.
+    expect: { requireAssertions: true },
+    // Лише *.test.ts(x): ac:coverage рахує тести тільки з цих файлів (*.spec.ts тут не запускається).
     include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
     // tests/fixtures — дані для тестів скриптів; файли *.test.ts там НЕ запускаються.
     exclude: ["node_modules/**", "tests/fixtures/**"],

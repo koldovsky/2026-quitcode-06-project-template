@@ -42,6 +42,10 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - `scripts/` — перевірки спеки й покриття AC; `tests/` — тести (`tests/fixtures/` — дані тестів скриптів)
 - `.claude/skills/` — наші скіли (`spec-clarify`, `spec-review`); Cursor читає їх звідти ж. `openspec-*` і `/opsx*`
   у `.claude/` та `.cursor/` згенерував OpenSpec (однакові копії для двох інструментів) — вручну не редагуй.
+- Нові шари курсу — новими файлами: e2e-тести — `tests/e2e/*.spec.ts` (Vitest їх не запускає, і `ac:coverage`
+  не рахує їх як покриття AC, доки e2e не запускає окремий крок CI — тоді фільтр у `scripts/lib/test-titles.mjs`
+  розширюють разом із цим кроком), нові перевірки — окремим workflow у `.github/workflows/`. Jobs `spec`, `app`,
+  `conformance`, `db` у `ci.yml` не перейменовуй і не видаляй: на їхніх назвах тримаються ruleset-и.
 
 ## Процес зі специфікацією
 
@@ -52,7 +56,7 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
   merge (merge commit) → `git switch main && git pull` → `git tag spec-vX.Y` → `git push origin spec-vX.Y`.
   Розробник: своя зміна `impl-<зріз>` з `skip_specs: true`, `design.md` і `tasks.md` («Done when: AC-…»);
   archive — в останньому PR зрізу до merge.
-- AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`.
+- AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`. Тести — лише у файлах `*.test.ts` / `*.test.tsx` під `src/` або `tests/`: інші файли (зокрема `*.spec.ts`) Vitest не запускає, і `ac:coverage` їх не рахує.
 - Рядок у `docs/conformance.md` оновлюється в тому самому PR, що й код (`/conformance`, `npm run ac:coverage`).
 - Кожна версія спеки у форку, і перша теж, — гілка `sync/spec-vX.Y` (merge тегу upstream) + оновити
   `.spec-source` + рядки нових AC у `docs/conformance.md`.
