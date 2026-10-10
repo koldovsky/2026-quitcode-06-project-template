@@ -8,11 +8,17 @@
 //      той самий ID двічі в зміні, ADDED-ID, який уже є в openspec/specs, MODIFIED-сценарій з ID чужої вимоги;
 //      і дві активні зміни не вводять той самий новий ID;
 //   4) жодне слово зі списку заборонених (product/denylist.txt + локальний product/denylist.local.txt
-//      + змінна середовища SPEC_DENYLIST)
-//      не трапляється в product/ і openspec/ (без урахування регістру; збіг за ПОЧАТКОМ слова, тож
-//      «Контосо» ловить і «Контосо», і «Контосою», і «Контосо-офіс»).
+//      + змінна середовища SPEC_DENYLIST) не трапляється в product/, openspec/, docs/, src/, supabase/,
+//      tests/ (без tests/scripts і tests/fixtures), README.md і AGENTS.md (без урахування регістру; збіг за
+//      ПОЧАТКОМ слова, тож «Контосо» ловить і «Контосо», і «Контосою», і «Контосо-офіс»; фраза ловиться й
+//      через перенесення рядка, латинські й кириличні літери-двійники рівноцінні; транслітерацію — ні);
+//      поруч із product/denylist.local.txt немає «бродячих» копій (denylist.local.txt.txt тощо: .gitignore
+//      їх ховає, але spec:check їх не читає);
+//   5) у кожній зміні (openspec/changes/<id> і archive/<id>) без `skip_specs: true` у .openspec.yaml є
+//      proposal.md з розділами Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions,
+//      Open questions у цьому порядку (інші розділи, як-от Impact, — між ними чи після них).
 // Код виходу: 0 — усе гаразд, 1 — є помилки.
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import {
   acIdOf,
@@ -27,7 +33,7 @@ import {
   walk,
 } from "./lib/spec-lib.mjs";
 
-const errors = { title: [], level: [], duplicate: [], changeDuplicate: [], denylist: [] };
+const errors = { title: [], level: [], duplicate: [], changeDuplicate: [], denylist: [], stray: [], proposal: [] };
 const specsDir = path.join(root(), "openspec", "specs");
 const changesDir = path.join(root(), "openspec", "changes");
 
@@ -46,7 +52,12 @@ for (const file of files) {
     }
     scenarioCount++;
     if (!acIdOf(s.title)) {
-      errors.title.push(`${where} — "${s.title}" не починається з AC-<AREA>-<NN> (напр. AC-LEAVE-01: …)`);
+      // Схоже на AC ID, але не проходить (кирилична А/С/Е…, три цифри): підказуємо, чому саме.
+      const nearMiss = /^[AАaа][CСcс]-\p{L}+-\d+/u.test(s.title.trim());
+      const hint = nearMiss
+        ? " — схоже на AC ID: AREA — 2–12 ВЕЛИКИХ ЛАТИНСЬКИХ літер (кириличні А, В, Е, І, К, М, Н, О, Р, С, Т, Х виглядають так само), NN — рівно дві цифри"
+        : "";
+      errors.title.push(`${where} — "${s.title}" не починається з AC-<AREA>-<NN> (напр. AC-LEAVE-01: …)${hint}`);
     }
   }
 }
@@ -182,8 +193,29 @@ for (const { file, secret } of DENYLIST_FILES) {
 for (const raw of (process.env.SPEC_DENYLIST ?? "").split(/[\n,]/)) {
   if (raw.trim()) words.push({ word: raw.trim(), source: "SPEC_DENYLIST", secret: true });
 }
+// «Бродячий» локальний denylist: Провідник Windows із прихованими розширеннями дає denylist.local.txt.txt.
+// .gitignore (/product/denylist.local*) його ховає, але spec:check читає лише product/denylist.local.txt.
+const productDir = path.join(root(), "product");
+if (existsSync(productDir)) {
+  for (const name of readdirSync(productDir)) {
+    if (name.startsWith("denylist.local") && name !== "denylist.local.txt") {
+      errors.stray.push(`product/${name} — перейменуйте на denylist.local.txt`);
+    }
+  }
+}
 if (words.length) {
   const escape = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Латинські й кириличні літери-двійники рівноцінні: «Kонтосо» з латинською K ловиться як «Контосо».
+  // Транслітерацію (Kontoso) це не ловить — таку форму пишуть у denylist окремим рядком.
+  const TWINS = ["aа", "bв", "cс", "eе", "hн", "iі", "kк", "mм", "oо", "pр", "tт", "xх", "yу"];
+  const twinClass = new Map(TWINS.flatMap((pair) => [...pair].map((ch) => [ch, `[${pair}]`])));
+  const toPattern = (word) =>
+    word
+      .trim()
+      .split(/\s+/)
+      .map((part) => [...part].map((ch) => twinClass.get(ch.toLowerCase()) ?? escape(ch)).join(""))
+      // Пробіли всередині фрази — будь-які, зокрема перенесення рядка у відформатованому markdown.
+      .join("\\s+");
   const secretIndex = new Map(); // джерело → лічильник
   const patterns = words.map(({ word, source, secret }) => {
     const n = (secretIndex.get(source) ?? 0) + 1;
@@ -191,24 +223,71 @@ if (words.length) {
     return {
       // Збіг за початком слова (без межі в кінці): у тексті українською назви відмінюються,
       // тож «Контосо» має ловити й «Контосою». Ціна — «Контосовіль» теж збіг (перефразуйте).
-      re: new RegExp(`(?<![\\p{L}\\p{N}])${escape(word)}`, "iu"),
+      re: new RegExp(`(?<![\\p{L}\\p{N}])${toPattern(word)}`, "giu"),
       // Секретні значення не друкуємо — лише номер слова в його джерелі.
       label: secret ? `слово #${n} із ${source}` : `"${word}"`,
     };
   });
   const denylistPaths = new Set(DENYLIST_FILES.map((d) => d.file));
+  // Не лише спека: розробник пише назви в docs/, коді, сидах і тестах. Не скануємо lock-файли (base64-хеші
+  // дають хибні збіги), бінарні файли, згенеровані типи й тести самих скриптів (tests/scripts, tests/fixtures:
+  // там слова denylist навмисно).
+  const skipScan = (r) =>
+    denylistPaths.has(r) ||
+    /^product\/denylist\.local/.test(r) ||
+    /(^|\/)(node_modules|\.next|\.git|\.temp|\.branches)(\/|$)/.test(r) ||
+    /^tests\/(fixtures|scripts)(\/|$)/.test(r) ||
+    r === "src/lib/supabase/database.types.ts" ||
+    /\.(png|jpe?g|gif|webp|ico|svg|pdf|woff2?|ttf|otf|mp4|webm|zip|lock)$/i.test(r) ||
+    /(^|\/)package-lock\.json$/.test(r);
+  const SCAN_DIRS = ["product", "openspec", "docs", "src", "supabase", "tests"];
   const scanned = [
-    ...walk(path.join(root(), "product"), { skip: (r) => denylistPaths.has(r) }),
-    ...walk(path.join(root(), "openspec")),
+    ...SCAN_DIRS.flatMap((d) => walk(path.join(root(), d), { skip: skipScan })),
+    ...["README.md", "AGENTS.md"].map((f) => path.join(root(), f)).filter((f) => existsSync(f)),
   ];
   for (const file of scanned) {
-    readText(file)
-      .split("\n")
-      .forEach((line, i) => {
-        for (const p of patterns) {
-          if (p.re.test(line)) errors.denylist.push(`${rel(file)}:${i + 1} — ${p.label}`);
-        }
-      });
+    // Увесь файл, а не рядок за рядком: фраза могла перенестися на інший рядок. М'який перенос і символи
+    // нульової ширини прибираємо, &nbsp; вважаємо пробілом (переноси рядків лишаються — номери рядків точні).
+    const text = readText(file).replace(/[­​-‍⁠]/g, "").replace(/&nbsp;/gi, " ");
+    const found = new Set();
+    for (const p of patterns) {
+      for (const m of text.matchAll(p.re)) {
+        found.add(`${rel(file)}:${text.slice(0, m.index).split("\n").length} — ${p.label}`);
+      }
+    }
+    errors.denylist.push(...found);
+  }
+}
+
+// 5. Розділи proposal.md у змінах PM (зміни розробника мають skip_specs: true і цього не потребують).
+const PROPOSAL_SECTIONS = ["Why", "What Changes", "Capabilities", "Users & roles", "Non-goals", "Assumptions", "Open questions"];
+const changeDirs = (dir) =>
+  existsSync(dir) ? readdirSync(dir).filter((n) => n !== "archive" && statSync(path.join(dir, n)).isDirectory()) : [];
+for (const dir of [changesDir, path.join(changesDir, "archive")]) {
+  for (const name of changeDirs(dir)) {
+    const full = path.join(dir, name);
+    const meta = path.join(full, ".openspec.yaml");
+    if (existsSync(meta) && /^skip_specs:\s*true\s*$/m.test(readText(meta))) continue;
+    const proposal = path.join(full, "proposal.md");
+    const headings = existsSync(proposal)
+      ? readText(proposal)
+          .split("\n")
+          .map((l) => l.match(/^##\s+(.+?)\s*$/)?.[1])
+          .filter(Boolean)
+      : [];
+    let pos = 0;
+    let gap = existsSync(proposal) ? null : "proposal.md";
+    for (const section of PROPOSAL_SECTIONS) {
+      if (gap) break;
+      const i = headings.findIndex((h, k) => k >= pos && h.toLowerCase() === section.toLowerCase());
+      if (i === -1) gap = `розділу «${section}»`;
+      else pos = i + 1;
+    }
+    if (gap) {
+      errors.proposal.push(
+        `${rel(full)} — бракує ${gap} (порядок: Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions)`,
+      );
+    }
   }
 }
 
@@ -222,6 +301,8 @@ printList("BAD-LEVEL: неправильний рівень заголовка �
 printList("DUPLICATE: AC ID повторюється в openspec/specs", errors.duplicate);
 printList("DUPLICATE-CHANGE: активна зміна дасть дубль AC ID після archive", errors.changeDuplicate);
 printList("DENYLIST: заборонене слово (анонімізація)", errors.denylist);
+printList("STRAY-DENYLIST: локальний denylist під іншим іменем (spec:check його не читає)", errors.stray);
+printList("PROPOSAL: зміна PM без proposal.md або без розділу з правил openspec/config.yaml", errors.proposal);
 if (total) {
   console.log(`\nFAIL: помилок — ${total}.`);
   process.exit(1);
