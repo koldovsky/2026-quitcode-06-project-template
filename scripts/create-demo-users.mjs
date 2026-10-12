@@ -105,7 +105,7 @@ for (const u of users) {
 
 if (failed) {
   console.error(
-    `\nПомилок: ${failed}. Перевірте, що міграції застосовано (npm run db:push) і ключ — секретний (sb_secret_…).`,
+    `\nПомилок: ${failed}. Перевірте, що міграції застосовано (job db-deploy у CI) і ключ — секретний (sb_secret_…).`,
   );
   process.exit(1);
 }
