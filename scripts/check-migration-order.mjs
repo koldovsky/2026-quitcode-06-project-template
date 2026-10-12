@@ -112,6 +112,9 @@ const behind = baseNames.filter((name) => !headNames.includes(name) && !branchPo
 const renamed = [];
 for (const name of baseNames) {
   if (headNames.includes(name) || behind.includes(name)) continue;
+  // Лише файл, старший за найновіший у базовій гілці (саме такий db-deploy відмовився застосувати); найновіший уже застосовано.
+  const from = version(name);
+  if (!from || !newest || BigInt(from) >= BigInt(newest)) continue;
   const before = normalize(git(["show", `${base}:${DIR}/${name}`]));
   const target = added.find((candidate) => {
     const v = version(candidate);

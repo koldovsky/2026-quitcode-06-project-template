@@ -102,6 +102,13 @@ describe("scripts/check-migration-order.mjs", () => {
     expect(out).not.toContain("RENAMED");
   });
 
+  it("fails DELETED when the newest (already applied) migration on main is renamed", () => {
+    const { code, out } = run("renamed-newest");
+    expect(code).toBe(1);
+    expect(out).toContain("DELETED   supabase/migrations/20261015100000_blocked_days.sql");
+    expect(out).not.toContain("RENAMED");
+  });
+
   it("fails on a file name the Supabase CLI would skip", () => {
     const { code, out } = run("bad-name");
     expect(code).toBe(1);

@@ -78,7 +78,8 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - Рядок у `docs/conformance.md` для AC задачі оновлюється в тому самому PR, що й код (`/conformance`, `npm run ac:coverage`);
   рядки чужих AC не чіпай.
 - Будь-який push після approve (виправлення, archive, `Update branch` / merge `main`) потребує нового approve
-  (ruleset: approve останнього push), тож гілку оновлюй лише при конфлікті. Merge блокують і невирішені обговорення
+  (ruleset: approve останнього push), тож гілку оновлюй лише при конфлікті й лише свою (хто оновив гілку, той її вже
+  не схвалить: PR PM зі спекою тоді не зможе схвалити й техлід). Merge блокують і невирішені обговорення
   (Require conversation resolution): кожен коментар рев'ю, і CodeRabbit теж, — виправ або дай відповідь і Resolve.
 - `/opsx:verify` і `/conformance` — порадники; ворота — CI (`spec`, `app`, `conformance`, `db-check`).
 - Виправлення шаблону курсу переносимо `git cherry-pick <sha>` у гілку `template/<коротко>`, не `git merge` (історії не пов'язані), — PR «Оновлення шаблону».

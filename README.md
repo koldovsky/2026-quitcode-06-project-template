@@ -48,7 +48,8 @@ PM створює з шаблону репозиторій команди, ро�
 Автор PR не може схвалити свій PR, тому PR PM зі спекою схвалює техлід, а PR розробника — будь-який колега
 (для `supabase/migrations/` і `openspec/`, зокрема archive `impl-<зріз>` в останньому PR зрізу, — власник із CODEOWNERS).
 Ruleset вимагає approve **останнього push** від іншої людини: будь-який ваш push після approve (виправлення за рев'ю,
-archive, `Update branch`) потребує нового approve. Merge блокують і невирішені обговорення (Require conversation
+archive, `Update branch`) потребує нового approve; хто натиснув `Update branch`, стає автором останнього push і сам
+схвалити PR уже не може, тому гілку оновлює лише автор PR. Merge блокують і невирішені обговорення (Require conversation
 resolution): кожен коментар рев'ю — і CodeRabbit теж — виправте або дайте відповідь, потім **Resolve conversation**.
 
 ## Перед початком (PM і розробники)
@@ -191,7 +192,7 @@ Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт �
 | `npm run spec:validate` | `openspec validate --all --strict` — структура специфікацій |
 | `npm run spec:check` | AC ID на початку кожного `#### Scenario:` (схожий на ID, але з кириличною літерою чи трьома цифрами — з підказкою); унікальність у `openspec/specs` і після archive кожної активної зміни; denylist (за початком слова, тож ловить відмінки; фраза — і через перенесення рядка) у `product/`, `openspec/`, `docs/`, `src/`, `supabase/`, `tests/`, `README.md`, `AGENTS.md`; немає «бродячого» `product/denylist.local*` під іншим іменем; у кожній зміні без `skip_specs` — `proposal.md` з усіма сімома розділами в порядку правил |
 | `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; статус дослівно «реалізовано» або «відкладено (причина)»; «реалізовано» має непропущений тест у `*.test.ts(x)` у `src/` чи `tests/` (їх запускає `npm test`), назва якого починається з ID; шляхи з колонок «Код»/«Тест» існують; тести не посилаються на неіснуючі AC. E2e-тести (`tests/e2e/*.spec.ts`) не рахуються, доки їх не запускає крок CI |
-| `node scripts/check-migration-order.mjs` | міграції, яких немає в `origin/main` (перевизначення — `MIGRATION_BASE` або `--base <ref>`), новіші за найновішу там (`OLDER`); назви `<14 цифр>_<назва>.sql` (`NAME`); без однакових міток (`DUPLICATE`); застосовані файли не змінено (`CHANGED`) і не видалено (`DELETED`); той самий SQL під новішою міткою — попередження `RENAMED` (відновлення, див. «Збої й відновлення») |
+| `node scripts/check-migration-order.mjs` | міграції, яких немає в `origin/main` (перевизначення — `MIGRATION_BASE` або `--base <ref>`), новіші за найновішу там (`OLDER`); назви `<14 цифр>_<назва>.sql` (`NAME`); без однакових міток (`DUPLICATE`); застосовані файли не змінено (`CHANGED`) і не видалено (`DELETED`); той самий SQL старшого за найновіший файлу під новішою міткою — попередження `RENAMED` (відновлення, див. «Збої й відновлення») |
 | CI `db-check` | `supabase db start` — усі міграції й сид на одноразовій базі в раннері (що саме застосовує `db start`, звіряємо на першому прогоні); у PR — `check-migration-order.mjs`; готовий `database.types.ts` у Summary прогону |
 
 ## Як цей шаблон зібрано з нуля
