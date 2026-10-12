@@ -21,11 +21,20 @@ function repo(name: string) {
   temps.push(dir);
   const src = path.join(fixtures, "migration-order", name);
   git(dir, "init", "-q", "-b", "main");
-  cpSync(path.join(src, "main"), dir, { recursive: true });
+  // Необов'язкова тека point: точка відгалуження PR; потім main іде далі (гілка відстає від main).
+  const hasPoint = existsSync(path.join(src, "point"));
+  cpSync(path.join(src, hasPoint ? "point" : "main"), dir, { recursive: true });
   git(dir, "add", "-A");
-  git(dir, "commit", "-q", "-m", "main");
+  git(dir, "commit", "-q", "-m", hasPoint ? "branch point" : "main");
+  git(dir, "branch", "task/1-demo");
+  if (hasPoint) {
+    rmSync(path.join(dir, "supabase"), { recursive: true, force: true });
+    cpSync(path.join(src, "main"), dir, { recursive: true });
+    git(dir, "add", "-A");
+    git(dir, "commit", "-q", "-m", "main");
+  }
   git(dir, "update-ref", "refs/remotes/origin/main", "HEAD");
-  git(dir, "switch", "-q", "-c", "task/1-demo");
+  git(dir, "switch", "-q", "task/1-demo");
   rmSync(path.join(dir, "supabase"), { recursive: true, force: true });
   if (existsSync(path.join(src, "pr", "supabase"))) {
     cpSync(path.join(src, "pr", "supabase"), path.join(dir, "supabase"), { recursive: true });
@@ -93,6 +102,21 @@ describe("scripts/check-migration-order.mjs", () => {
     const { code, out } = run("empty-main");
     expect(code).toBe(0);
     expect(out).toContain("нових міграцій 1");
+  });
+
+  it("does not report main's newer migrations as deleted when the branch is behind main", () => {
+    const { code, out } = run("behind-ok");
+    expect(code).toBe(0);
+    expect(out).toContain("нових міграцій 1");
+    expect(out).toContain("Примітка: гілка відстає від origin/main (ще не злиті: 20261014090000_leave_requests.sql)");
+  });
+
+  it("still fails OLDER (and only OLDER) for a branch behind main", () => {
+    const { code, out } = run("behind-older");
+    expect(code).toBe(1);
+    expect(out).toContain("OLDER     supabase/migrations/20261013120000_blocked_days.sql");
+    expect(out).not.toContain("DELETED");
+    expect(out).not.toContain("CHANGED / DELETED");
   });
 
   it("fails with a fetch hint when the base branch is missing", () => {

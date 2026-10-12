@@ -47,12 +47,16 @@ try {
 
 const normalize = (text) => text.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
 
-// Міграції базової гілки: ім'я файлу → вміст.
-const baseNames = git(["ls-tree", "--name-only", base, `${DIR}/`])
-  .split("\n")
-  .map((line) => line.trim())
-  .filter((line) => line.endsWith(".sql"))
-  .map((line) => path.posix.basename(line));
+// Імена файлів міграцій у коміті ref.
+function listMigrations(ref) {
+  return git(["ls-tree", "--name-only", ref, `${DIR}/`])
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.endsWith(".sql"))
+    .map((line) => path.posix.basename(line));
+}
+
+const baseNames = listMigrations(base);
 
 // Міграції робочої теки (те, що піде в main після merge).
 const headDir = path.join(process.cwd(), DIR);
@@ -87,9 +91,23 @@ for (const name of added) {
   }
 }
 
+// Гілка, що відстає від базової (локальний запуск до git merge origin/main), просто ще не має новіших міграцій main —
+// це не видалення. DELETED — лише для міграцій, які вже були в точці відгалуження гілки (git merge-base).
+// У CI для PR перевіряється merge-ref (PR + свіжий main), тож там відставання немає.
+let branchPointNames = baseNames;
+try {
+  const point = git(["merge-base", "HEAD", base]).trim();
+  if (point) branchPointNames = listMigrations(point);
+} catch {
+  // Немає спільної історії чи неглибокий клон — порівнюємо з самою базовою гілкою.
+}
+const behind = baseNames.filter((name) => !headNames.includes(name) && !branchPointNames.includes(name));
+
 for (const name of baseNames) {
   if (!headNames.includes(name)) {
-    problems.push(`DELETED   ${DIR}/${name}: міграція з ${base} видалена (застосовані міграції не видаляємо).`);
+    if (!behind.includes(name)) {
+      problems.push(`DELETED   ${DIR}/${name}: міграція з ${base} видалена (застосовані міграції не видаляємо).`);
+    }
     continue;
   }
   const before = normalize(git(["show", `${base}:${DIR}/${name}`]));
@@ -111,13 +129,17 @@ if (problems.length) {
     ? `OLDER — перейменуйте файл новою міткою (SQL не змінюється), закомітьте й запуште в ту саму гілку:\n` +
       `  git fetch origin && git merge origin/main\n` +
       `  git mv ${DIR}/${older} ${DIR}/${suggested}_${older.replace(/^\d+_/, "")}\n` +
-      `  (або: npx supabase migration new <назва> → перенесіть SQL → видаліть старий файл)\n`
+      `  (або: npx supabase migration new <назва> → перенесіть SQL → видаліть старий файл)`
     : "";
-  fail(
-    problems,
-    `${rename}CHANGED / DELETED — поверніть файл: git checkout ${base} -- ${DIR}/<файл>; зміну схеми оформіть новою міграцією.\n` +
-      `NAME — створюйте файли лише командою: npx supabase migration new <назва>.`,
-  );
+  const has = (kind) => problems.some((line) => line.startsWith(kind));
+  const hints = [
+    rename,
+    has("CHANGED") || has("DELETED")
+      ? `CHANGED / DELETED — поверніть файл: git checkout ${base} -- ${DIR}/<файл>; зміну схеми оформіть новою міграцією.`
+      : "",
+    has("NAME") || has("DUPLICATE") ? "NAME / DUPLICATE — створюйте файли лише командою: npx supabase migration new <назва>." : "",
+  ];
+  fail(problems, hints.filter(Boolean).join("\n"));
 }
 
 console.log(
@@ -125,3 +147,8 @@ console.log(
     (added.length && newest ? `, усі новіші за ${newest} (${base})` : "") +
     `; застосовані міграції не змінено.`,
 );
+if (behind.length) {
+  console.log(
+    `Примітка: гілка відстає від ${base} (ще не злиті: ${behind.join(", ")}). Перед PR: git fetch origin && git merge origin/main.`,
+  );
+}
