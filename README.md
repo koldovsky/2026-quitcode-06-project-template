@@ -32,7 +32,7 @@ PM створює з шаблону репозиторій команди, ро�
 шаблон (цей репозиторій)
   └─ «Use this template» → <pm>/<team-repo>   (публічний, особистий акаунт PM)
         ├─ main            ← лише через PR (ruleset: 1 approve, CODEOWNERS, зелений CI); теги spec-vX.Y
-        ├─ spec/<id>       ← PM: зміна специфікації (рев'ю техліда)
+        ├─ spec/<id>       ← PM: зміна специфікації (рев'ю техліда); product/context — продуктовий контекст
         ├─ task/<N>-…      ← розробник: задача з issue #N (рев'ю колеги)
         └─ onboarding/<login>, template/<коротко>
   Supabase: організація <team-slug> PM, один проєкт (розробники — Developer)   ← міграції застосовує CI (db-deploy)
