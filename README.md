@@ -155,7 +155,10 @@ Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт �
   друкує `scripts/check-migration-order.mjs`) і запуште.
 - `db-deploy` FAIL «Found local migration files to be inserted before the last migration on remote database» — два PR-и
   з міграціями пройшли перевірки паралельно (статуси не вимагають «up to date») і злились у зворотному порядку. Окремий PR:
-  `git mv` старшого файлу на нову мітку → merge → `db-deploy` застосує. Ніколи `--include-all`.
+  `git mv` старшого (ще не застосованого — див. журнал `db-deploy`) файлу на нову мітку без зміни SQL → `db-check`
+  покаже попередження `RENAMED`, не FAIL → рев'ю власника з CODEOWNERS → merge → `db-deploy` застосує. Ніколи `--include-all`.
+- `db-deploy` скасовано (cancelled) на якомусь коміті `main` — кілька merge поспіль: у групі `supabase-prod` GitHub тримає
+  один прогін в очікуванні, і новіший замінює старіший. Нічого не втрачено: наступний прогін застосовує всі міграції з `main`.
 - `db-deploy` FAIL «Remote migration versions not found in local migrations directory» — хтось застосував міграцію не
   через `main` (`db push` з ноутбука чи з гілки). Лише PM: якщо зміна потрібна — PR із цим файлом у `main`; якщо ні —
   `supabase migration repair --status reverted <версія> --db-url "<рядок pooler>"` зі свого ноутбука й відкат змін схеми
@@ -181,7 +184,7 @@ Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт �
 | `npm run spec:validate` | `openspec validate --all --strict` — структура специфікацій |
 | `npm run spec:check` | AC ID на початку кожного `#### Scenario:` (схожий на ID, але з кириличною літерою чи трьома цифрами — з підказкою); унікальність у `openspec/specs` і після archive кожної активної зміни; denylist (за початком слова, тож ловить відмінки; фраза — і через перенесення рядка) у `product/`, `openspec/`, `docs/`, `src/`, `supabase/`, `tests/`, `README.md`, `AGENTS.md`; немає «бродячого» `product/denylist.local*` під іншим іменем; у кожній зміні без `skip_specs` — `proposal.md` з усіма сімома розділами в порядку правил |
 | `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; статус дослівно «реалізовано» або «відкладено (причина)»; «реалізовано» має непропущений тест у `*.test.ts(x)` у `src/` чи `tests/` (їх запускає `npm test`), назва якого починається з ID; шляхи з колонок «Код»/«Тест» існують; тести не посилаються на неіснуючі AC. E2e-тести (`tests/e2e/*.spec.ts`) не рахуються, доки їх не запускає крок CI |
-| `node scripts/check-migration-order.mjs` | міграції, яких немає в `origin/main` (перевизначення — `MIGRATION_BASE` або `--base <ref>`), новіші за найновішу там (`OLDER`); назви `<14 цифр>_<назва>.sql` (`NAME`); без однакових міток (`DUPLICATE`); застосовані файли не змінено (`CHANGED`) і не видалено (`DELETED`) |
+| `node scripts/check-migration-order.mjs` | міграції, яких немає в `origin/main` (перевизначення — `MIGRATION_BASE` або `--base <ref>`), новіші за найновішу там (`OLDER`); назви `<14 цифр>_<назва>.sql` (`NAME`); без однакових міток (`DUPLICATE`); застосовані файли не змінено (`CHANGED`) і не видалено (`DELETED`); той самий SQL під новішою міткою — попередження `RENAMED` (відновлення, див. «Збої й відновлення») |
 | CI `db-check` | `supabase db start` — усі міграції й сид на одноразовій базі в раннері (що саме застосовує `db start`, звіряємо на першому прогоні); у PR — `check-migration-order.mjs`; готовий `database.types.ts` у Summary прогону |
 
 ## Як цей шаблон зібрано з нуля
