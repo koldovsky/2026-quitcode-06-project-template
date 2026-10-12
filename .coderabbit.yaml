@@ -132,7 +132,7 @@ reviews:
           (design.md, tasks.md) is also a Spec change; no src/** or supabase/**. Task (branch task/*):
           the diff does NOT modify product/** or openspec/specs/**, the description has "Closes #N",
           new migrations are new files only. Onboarding: only docs/team.md, docs/spec-reading/**,
-          docs/bootstrap.md and docs/img/**. Template update (branch template/*): cherry-picked
+          docs/bootstrap.md, docs/img/** and supabase/demo-users.json. Template update (branch template/*): cherry-picked
           course-template commits; any path may change.
           FAIL if the diff crosses these boundaries; answer in Ukrainian.
 

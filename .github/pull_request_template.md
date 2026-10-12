@@ -6,7 +6,8 @@
   (`design.md`, `tasks.md`); пропозиція розробника — `openspec/changes/<id>/`. Без `src/` і `supabase/`.
 - [ ] **Реалізація задачі** — гілка `task/<N>-<коротко>`: `src/`, `supabase/migrations/`, тести, `docs/conformance.md`, `docs/decisions/`.
   Без `product/` і `openspec/specs/`.
-- [ ] **Онбординг** — `docs/team.md` (рядок про себе), свій журнал `docs/spec-reading/<login>.md`; PM — `docs/bootstrap.md`, `docs/img/`. Без коду.
+- [ ] **Онбординг** — `docs/team.md` (рядок про себе), свій журнал `docs/spec-reading/<login>.md`, свій тестовий користувач у `supabase/demo-users.json`;
+  PM — `docs/bootstrap.md`, `docs/img/`. Без коду.
 - [ ] **Оновлення шаблону** — гілка `template/<коротко>`: `git cherry-pick` коміту шаблону курсу (README, «Оновлення шаблону»).
 
 Closes #

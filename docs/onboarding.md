@@ -31,7 +31,7 @@ cp .env.example .env.local      # у PowerShell: Copy-Item .env.example .env.loc
 - [ ] `npm run dev` → `http://localhost:3000` → вхід синтетичним користувачем (`*@example.test`; пароль — від PM або техліда
       в особистому повідомленні). Реєстрацію в Supabase вимкнено, тож нових користувачів створює лише `npm run users:demo`
       за списком `supabase/demo-users.json` (потрібен свій тестовий користувач чи роль — додайте запис `*@example.test`
-      у PR, після merge PM або техлід запустить `npm run users:demo`).
+      у PR «Онбординг», після merge PM або техлід запустить `npm run users:demo`).
 
 ## 4. Правила спільної бази
 

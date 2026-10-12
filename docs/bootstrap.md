@@ -28,7 +28,7 @@
 - [ ] Розробників запрошено в організацію роллю **Developer** (не Administrator: інакше проєкт займе слот розробника) — <!-- знімок Team -->
 - [ ] Authentication: «Allow new users to sign up» **вимкнено**, «Confirm email» **вимкнено**
       (точне місце перемикачів у Dashboard звіряємо на репетиції) — <!-- знімки docs/img/auth-signups.png, docs/img/auth-email.png -->
-- [ ] Authentication → URL Configuration: Site URL = прод-URL Vercel; Redirect URLs `http://localhost:3000/**`, `https://*-<slug>.vercel.app/**` — <!-- знімок -->
+- [ ] (Після кроку 4, коли є прод-URL) Authentication → URL Configuration: Site URL = прод-URL Vercel; Redirect URLs `http://localhost:3000/**`, `https://*-<slug>.vercel.app/**` — <!-- знімок -->
 
 ## 3. GitHub: environment `production` і секрети
 
