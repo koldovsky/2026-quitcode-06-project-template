@@ -8,13 +8,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Командний проєкт (шаблон)
+# Проєкт розробника (шаблон)
 
-Вебзастосунок команди в **одному репозиторії**: PM пише специфікацію, команда реалізує її однією спільною
-реалізацією — задачі (issues) → гілки → PR → рев'ю колеги → merge. Форків немає.
-Продукт — `product/vision.md`; терміни — `product/glossary.md`; ролі й права — `product/roles.md`.
+Ваша **власна** реалізація продукту команди у вашому репо: власні Supabase і Vercel, задачі → гілки → PR → CodeRabbit →
+merge. Вимоги веде PM у своєму репо вимог (`<pm>/<team-slug>-spec`); сюди їх копіює лише команда `/spec-sync`
+(адреса репо PM, коміт і дата — у шапці `docs/conformance.md`). Наприкінці PM порівнює реалізації розробників команди.
+Продукт — `product/vision.md`; терміни — `product/glossary.md`; ролі й права — `product/roles.md` (копії з репо PM).
 
-## Стек і версії (не оновлювати без рішення команди)
+## Стек і версії (не оновлювати без ADR)
 
 Node 24.x · Next.js 16.4 (App Router, `src/`, без Cache Components) · React 19.3 · TypeScript ^5 · ESLint ^9 ·
 Tailwind 4 · `@supabase/supabase-js` 2.117 + `@supabase/ssr` 0.12 · Supabase CLI 2.120 (devDependency) ·
@@ -27,10 +28,11 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - `npm run typecheck` (`next typegen && tsc --noEmit`) · `npm test` (Vitest)
 - `npm run spec:validate` · `npm run spec:check` · `npm run ac:coverage`
 - `node scripts/check-migration-order.mjs` — нова міграція новіша за `origin/main`, застосовані не змінено (у CI — `db-check`)
-- `npx supabase migration new <назва>` → SQL → PR. Застосовує міграції в базу команди ЛИШЕ CI (`db-deploy` після merge у `main`)
-- Типи БД: готовий `database.types.ts` — у Summary прогону job `db-check` (Docker не потрібен); `npm run db:types` —
-  лише PM або техлід після `npx supabase link` (якщо впав — `git restore src/lib/supabase/database.types.ts`)
-- `npm run users:demo` — синтетичні користувачі з `supabase/demo-users.json` (лише PM або техлід: потрібен `SUPABASE_SECRET_KEY`)
+- `npx supabase migration new <назва>` → SQL → PR. Застосовує міграції у вашу базу ЛИШЕ CI (`db-deploy` після merge у `main`)
+- Типи БД: готовий `database.types.ts` — у Summary прогону job `db-check` (Docker не потрібен); або `npm run db:types`
+  після `npx supabase link` на ваш проєкт (якщо впав — `git restore src/lib/supabase/database.types.ts`)
+- `npm run users:demo` — синтетичні користувачі з `supabase/demo-users.json` (потрібен ваш `SUPABASE_SECRET_KEY` у `.env.local`)
+- `/spec-sync` (Claude Code і Cursor) — підтягнути актуальні вимоги з `main` репо PM; `/conformance` — перебудувати матрицю
 - `openspec …` (його викликають `/opsx:*` і скіли `openspec-*`): якщо `openspec` не знайдено або
   `openspec --version` ≠ 1.14.1 — запускай `npx openspec …` (версія з package.json) і скажи людині
   встановити `npm i -g @fission-ai/openspec@1.14.1`
@@ -40,12 +42,14 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - `src/app/` — сторінки й server actions; `src/proxy.ts` — оновлення сесії (НЕ `middleware.ts`)
 - `src/lib/supabase/{client,server,proxy}.ts` — клієнти Supabase; `database.types.ts` — генерується
 - `supabase/migrations/` — схема як код; `supabase/seed.sql` — ідемпотентний сид
-- `openspec/specs/` — канонічна специфікація; `openspec/changes/` — зміни; `openspec/config.yaml` — правила
-- `product/` — продуктовий контекст PM; `docs/` — `bootstrap.md` (налаштування PM), `onboarding.md`, `team.md`,
-  `conformance.md` (спільна матриця), `spec-reading/<login>.md` (журнали), `decisions/` (ADR)
-- `.github/` — `ci.yml`, `CODEOWNERS`, шаблон PR, форми issues «Питання до специфікації» і «Задача»
+- `openspec/specs/` — канонічні вимоги (копія з репо PM, лише через `/spec-sync`); `openspec/changes/` — ваші зміни
+  `impl-<зріз>`; `openspec/config.yaml` — правила
+- `product/` — продуктовий контекст PM (копія, лише через `/spec-sync`); `docs/` — `bootstrap.md` (чекліст дня 0),
+  `conformance.md` (ваша матриця; у шапці — звідки й з якого коміту вимоги), `spec-reading.md` (журнал), `decisions/` (ADR)
+- `.github/` — `ci.yml`, шаблон PR
 - `scripts/` — перевірки спеки й покриття AC; `tests/` — тести (`tests/fixtures/` — дані тестів скриптів)
-- `.claude/skills/` — наші скіли (`spec-clarify`, `spec-review`); Cursor читає їх звідти ж. `openspec-*` і `/opsx*`
+- `.claude/commands/` — наші `spec-sync.md` і `conformance.md` (у `.cursor/commands/` — посилання на них);
+  `.claude/skills/` — наш скіл `spec-clarify`; Cursor читає його звідти ж. `openspec-*` і `/opsx*`
   у `.claude/` та `.cursor/` згенерував OpenSpec (однакові копії для двох інструментів) — вручну не редагуй.
 - Нові шари курсу — новими файлами: e2e-тести — `tests/e2e/*.spec.ts` (Vitest їх не запускає, і `ac:coverage`
   не рахує їх як покриття AC, доки e2e не запускає окремий крок CI — тоді фільтр у `scripts/lib/test-titles.mjs`
@@ -54,45 +58,41 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 
 ## Процес і ролі
 
-- **PM** — власник репозиторію, Supabase і Vercel; пише `product/` і зміни специфікації, відповідає на issues
-  `spec-question`, ставить теги `spec-vX.Y`. **Техлід** — співвласник спеки в CODEOWNERS, рев'юїть PR-и PM зі спекою,
-  разом із командою пише зміну `impl-<зріз>` (design.md + tasks.md) і задачі. **Розробник** — питання до спеки, задачі, рев'ю колег.
-- Усе йде в `main` лише через PR (ruleset): 1 approve колеги (автор свій PR не схвалює), для `product/`, `openspec/`,
-  `.github/`, `supabase/migrations/` — approve власника з `.github/CODEOWNERS`; зелені `spec`, `app`, `conformance`, `db-check`.
-- Типи PR (шаблон PR): «Зміна специфікації» (гілка `spec/<id>`; продуктовий контекст — `product/context`), «Реалізація задачі» (`task/<N>-<коротко>`, `Closes #N`),
-  «Онбординг» (`docs/team.md`, свій журнал `docs/spec-reading/<login>.md`, PM — `docs/bootstrap.md` і `.github/CODEOWNERS` у день 0),
-  «Оновлення шаблону» (`template/<коротко>`, `git cherry-pick`).
-- `product/` і `openspec/specs/` змінює лише PM PR-ом «Зміна специфікації»; у PR задачі їх не чіпай. Розробник пропонує
-  зміну спеки питанням (issue `spec-question`, скіл `spec-clarify`; спершу шукай наявне issue — дублікатів не створюємо)
-  або окремим PR зі зміною в `openspec/changes/<id>/`.
-- Реліз спеки (PM): гілка `spec/<id>` → `proposal.md` + дельта → `spec-review` → PR → рев'ю техліда → у гілці, до merge:
-  `npx openspec archive <id> -y`, запис у `product/CHANGELOG.md` і рядок у `docs/conformance.md` для кожного нового AC
-  зі статусом «відкладено (новий AC — чекає задачі)» (інакше `conformance` червоний) → повторний approve техліда → merge →
-  `git switch main && git pull` → `git tag spec-vX.Y` → `git push origin spec-vX.Y` (виправлення — `spec-vX.Y.Z`).
-- Зміна команди `impl-<зріз>` з `skip_specs: true`: `design.md` і `tasks.md` («Done when: AC-…») → з пунктів tasks.md —
-  issues «Задача» (мітка `task`); archive — в останньому PR зрізу до merge (approve — PM або техлід). У PR задачі
-  `tasks.md` не змінюй (галочок не став навіть у `/opsx:apply`; прогрес — закриті issues): інакше PR потребує
-  власника `openspec/` і конфліктує з паралельними PR-ами.
+- **PM** веде вимоги у своєму репо `<pm>/<team-slug>-spec`: поточні вимоги — те, що злито в його `main`; там само
+  відповідає на issues «Питання до специфікації». **Розробник** (ви) — власник цього репо: налаштування, питання до
+  вимог, власна зміна `impl-<зріз>`, реалізація й тести. Колег у цьому репо немає; рев'ю — CodeRabbit.
+- `product/` і `openspec/specs/` змінює **лише** `/spec-sync` (інструкція — `.claude/commands/spec-sync.md`; у Cursor —
+  `/spec-sync`): копіює `main` репо PM, показує нові / змінені / прибрані AC, оновлює шапку й рядки `docs/conformance.md`,
+  робить гілку `sync/<дата>` і коміт; push і PR «Оновлення вимог» — лише після «так» людини. Коли просять «підтягни
+  (оновлені) вимоги» — виконуй саме цю інструкцію; скриптів синхронізації не пиши, тегів не став.
+- Питання й пропозиції до вимог — issues у репо PM лише через його вебформу (`…/issues/new/choose`; адреса — з шапки
+  `docs/conformance.md`), не `gh issue create`: скіл `spec-clarify`; спершу шукай наявне issue — дублікатів не створюємо;
+  журнал — `docs/spec-reading.md`.
+- Усе йде в `main` лише через PR (ruleset `solo-main`): зелені `spec`, `app`, `conformance`, `db-check`; approve не потрібен.
+- Типи PR (шаблон PR): «Оновлення вимог» (`sync/<дата>`: лише `product/`, `openspec/specs/`, `docs/conformance.md`; плюс
+  окремий коміт, якщо PM прибрав AC, на який посилаються тести), «Реалізація» (`task/<коротко>`, у день 0 — `setup/bootstrap`:
+  код, міграції, тести, `docs/`, власна `openspec/changes/impl-<зріз>/`), «Оновлення шаблону» (`template/<коротко>`, `git cherry-pick`).
+- Зміна `impl-<зріз>`: `npx openspec new change impl-<зріз>` → `skip_specs: true` у `.openspec.yaml` → `design.md`
+  (рішення з AC ID) і `tasks.md` (вертикальні задачі з «Done when: AC-…»); галочки в `tasks.md` став у PR задачі;
+  archive (`npx openspec archive impl-<зріз> -y`) — в останньому PR зрізу.
 - AC ID (`AC-<AREA>-<NN>`) — на початку назви сценарію і в назві тесту: `it("AC-LEAVE-02: …")`; лише AC, які вже є в
-  `openspec/specs/` (інакше ORPHAN). Тести — лише у файлах `*.test.ts` / `*.test.tsx` під `src/` або `tests/`: інші файли (зокрема `*.spec.ts`) Vitest не запускає, і `ac:coverage` їх не рахує. Перевірки в тестах — через `expect(…)`: `vitest.config.mts` вимагає хоча б один `expect` у кожному тесті, а `assert` (з `vitest` чи `node:assert`) не рахується — такий тест падає з «expected any number of assertion, but got none».
+  `openspec/specs/` (інакше ORPHAN): за новою вимогою працюй після злитого PR «Оновлення вимог». Тести — лише у файлах `*.test.ts` / `*.test.tsx` під `src/` або `tests/`: інші файли (зокрема `*.spec.ts`) Vitest не запускає, і `ac:coverage` їх не рахує. Перевірки в тестах — через `expect(…)`: `vitest.config.mts` вимагає хоча б один `expect` у кожному тесті, а `assert` (з `vitest` чи `node:assert`) не рахується — такий тест падає з «expected any number of assertion, but got none».
 - Рядок у `docs/conformance.md` для AC задачі оновлюється в тому самому PR, що й код (`/conformance`, `npm run ac:coverage`);
-  рядки чужих AC не чіпай.
-- Будь-який push після approve (виправлення, archive, `Update branch` / merge `main`) потребує нового approve
-  (ruleset: approve останнього push), тож гілку оновлюй лише при конфлікті й лише свою (хто оновив гілку, той її вже
-  не схвалить: PR PM зі спекою тоді не зможе схвалити й техлід). Merge блокують і невирішені обговорення
-  (Require conversation resolution): кожен коментар рев'ю, і CodeRabbit теж, — виправ або дай відповідь і Resolve.
+  рядок «Вимоги: …» у шапці матриці змінює лише `/spec-sync`. Новий AC після синхронізації — «відкладено (нова вимога —
+  чекає реалізації)», доки його не реалізовано або не вказано конкретну причину з посиланням на рішення PM.
+- На кожен коментар CodeRabbit — виправлення або відповідь, чому ні.
 - `/opsx:verify` і `/conformance` — порадники; ворота — CI (`spec`, `app`, `conformance`, `db-check`).
 - Виправлення шаблону курсу переносимо `git cherry-pick <sha>` у гілку `template/<коротко>`, не `git merge` (історії не пов'язані), — PR «Оновлення шаблону».
 
 ## База даних (Supabase)
 
-- Одна база на команду (проєкт PM). Схему змінюємо ЛИШЕ міграцією в PR: `npx supabase migration new <назва>` → SQL →
-  PR → `db-check` (усі міграції на одноразовій базі + порядок міграцій) → рев'ю власника з CODEOWNERS → merge →
-  `db-deploy` застосовує її через environment `production`. **Ніколи** `supabase db push` з ноутбука, **ніколи** DDL у
-  SQL Editor чи Table Editor: база розійдеться з `main`, і `db-deploy` впаде в усієї команди.
+- Власна база (ваш проєкт Supabase). Схему змінюємо ЛИШЕ міграцією в PR: `npx supabase migration new <назва>` → SQL →
+  PR → `db-check` (усі міграції на одноразовій базі + порядок міграцій) → merge → `db-deploy` застосовує її через
+  environment `production`. **Ніколи** `supabase db push` з ноутбука, **ніколи** DDL у SQL Editor чи Table Editor:
+  база розійдеться з `main`, і `db-deploy` впаде.
 - Одна міграція на зміну; застосовані файли не редагуємо й не видаляємо — лише новий файл. `db-check` каже «OLDER»
-  (колега злив новішу міграцію раніше) — перейменуй свій файл новою міткою (команду друкує скрипт).
-- Спільні дані: лише синтетичні, своїм тестовим користувачем; чужі записи не видаляй; деструктивні зміни (drop, truncate) — лише з рев'ю PM.
+  (міграцію з іншої вашої гілки злито раніше) — перейменуй файл новою міткою (команду друкує скрипт).
+- Дані: лише синтетичні (`*@example.test`); деструктивні зміни (drop, truncate) — лише міграцією в PR і з позначкою ризику в описі.
 - Кожна таблиця в `public`: `enable row level security`; `revoke all … from anon, authenticated`;
   явні `grant` (автогрантів немає); політика на кожну операцію з `to authenticated` і `(select auth.uid())`;
   колонкові `grant update (…)`, щоб користувач не змінив собі `role`/`status`.
@@ -113,13 +113,13 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 - Значення лише в `.env.local`, Vercel (Production + Preview) і GitHub (секрет environment `production` —
   `SUPABASE_DB_URL`; секрет репозиторію `SPEC_DENYLIST`); ніколи в git, логах чи чаті.
   У Vercel — лише `NEXT_PUBLIC_SUPABASE_URL` і `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; `SUPABASE_SECRET_KEY` —
-  ніколи (лише `.env.local` PM або техліда для скриптів).
+  ніколи (лише ваш `.env.local` для скриптів).
 - Імена: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` лише для скриптів
   (не `NEXT_PUBLIC_`, не `*_ANON_KEY`/`SERVICE_ROLE_KEY`). Шаблон — `.env.example`.
 - `.claude/settings.json` забороняє Claude Code читати `.env*` (крім `.env.example`); Cursor цих правил не читає — у Cursor не відкривай `.env*` агентом і не вставляй значень у чат. Скрипти з секретами запускай
   як `node --env-file=.env.local …` — вони значень не друкують.
 - Supabase MCP (`.mcp.json`, лише Claude Code; Cursor бере MCP з `.cursor/mcp.json`) — лише читання, один проєкт: перед запуском задай `SUPABASE_PROJECT_REF`.
-- `product/denylist.local*` — справжні назви клієнта: не відкривай і не цитуй (найкраще зусилля, не гарантія: у Claude Code — deny `Read(product/denylist.local*)` у `.claude/settings.json`, у Cursor — `.cursorignore`, який за документацією Cursor не закриває термінал і MCP; чи deny діє на пошук і `cat`, звіряємо на репетиції).
+- `product/denylist.local*` — справжні назви клієнта (список PM надсилає особистим повідомленням; git файл не відстежує, тож `/spec-sync` його не чіпає): не відкривай і не цитуй (найкраще зусилля, не гарантія: у Claude Code — deny `Read(product/denylist.local*)` у `.claude/settings.json`, у Cursor — `.cursorignore`, який за документацією Cursor не закриває термінал і MCP; чи deny діє на пошук і `cat`, звіряємо на репетиції).
 
 ## Межі
 
@@ -128,12 +128,13 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
 перед зміною моделі даних, структури сторінок чи залежностей читай `docs/decisions/` і `design.md` активної зміни
 й дотримуйся їх; рішення, що їм суперечить, — лише новим ADR зі статусом «замінює NNNN», а не мовчки в коді.
 
-**Спитай спершу:** нові залежності; нові міграції (хто ще змінює схему в паралельних PR-ах); новий ADR або зміна прийнятого;
+**Спитай спершу:** нові залежності; нові міграції (чи не змінює схему інша ваша відкрита гілка); новий ADR або зміна прийнятого;
 зміни `.github/`, `.mcp.json`,
 `.claude/settings.json`, `openspec/config.yaml`; `npx openspec update` (з профілем core видаляє `/opsx:verify` —
 потрібен профіль custom, див. README); `git push`, створення PR чи issue; видалення файлів.
 
-**Ніколи:** не змінюй `product/` і `openspec/specs/` у PR задачі; не редагуй застосовані міграції;
+**Ніколи:** не змінюй `product/` і `openspec/specs/` руками (лише `/spec-sync`, PR «Оновлення вимог»); не створюй
+issues у репо PM через `gh issue create`; не редагуй застосовані міграції;
 `supabase db push` (з ноутбука — у будь-якому вигляді), DDL у SQL Editor, `supabase db reset --linked`,
-`migration down --linked`, `migration repair` (лише PM за README);
+`migration down --linked`, `migration repair` (лише людина, за README);
 не пиши секрети й справжні назви клієнтів, імена людей і їхні дані ні у файли, ні в тексти комітів, PR чи issues (`spec:check` ловить назви з denylist лише у файлах); не створюй `middleware.ts`; не використовуй `getSession()` для авторизації.

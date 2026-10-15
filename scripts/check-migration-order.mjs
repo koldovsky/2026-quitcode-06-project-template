@@ -3,8 +3,8 @@
 //
 // Supabase CLI застосовує міграції за часовою міткою в назві файлу (<14 цифр>_<назва>.sql), а `supabase db push`
 // без --include-all відмовляється вставляти файл, старший за вже застосовану міграцію («Found local migration files
-// to be inserted before the last migration on remote database»). Типовий випадок у команді: двоє створили міграції
-// в паралельних гілках, колега злив свою першою — ваша тепер «старша» і зламає db-deploy після merge.
+// to be inserted before the last migration on remote database»). Типовий випадок: у двох паралельних гілках ви (чи агент)
+// створили міграції, і новішу злили першою — тепер міграція другої гілки «старша» і зламає db-deploy після merge.
 //
 // Порівнює файли supabase/migrations/*.sql у робочій теці з базовою гілкою (за замовчуванням origin/main;
 // перевизначення — змінна MIGRATION_BASE або аргумент --base <ref>). FAIL, якщо:
@@ -108,7 +108,7 @@ const behind = baseNames.filter((name) => !headNames.includes(name) && !branchPo
 // Відновлення після FAIL db-deploy «inserted before the last migration»: файл, уже злитий у main, але НЕ застосований
 // (два PR-и злились у зворотному порядку), перейменовують новою міткою без зміни SQL. Це не видалення: такий файл
 // з тим самим вмістом під новішою міткою — RENAMED (попередження, не FAIL). Якщо ж цю міграцію вже застосовано,
-// db-deploy після merge впаде «Remote migration versions not found» — тому рев'ю власника з CODEOWNERS.
+// db-deploy після merge впаде «Remote migration versions not found» — тому перед merge звірте журнал db-deploy.
 const renamed = [];
 for (const name of baseNames) {
   if (headNames.includes(name) || behind.includes(name)) continue;
@@ -175,8 +175,8 @@ console.log(
 for (const [from, to] of renamed) {
   const text =
     `RENAMED ${DIR}/${from} → ${to} (SQL той самий). Лише для відновлення після FAIL db-deploy «Found local migration ` +
-    `files to be inserted before the last migration»: файл є в ${base}, але ще НЕ застосований у базі команди. ` +
-    `Якщо його вже застосовано, db-deploy після merge впаде «Remote migration versions not found» — рев'юер звіряє журнал db-deploy.`;
+    `files to be inserted before the last migration»: файл є в ${base}, але ще НЕ застосований у вашій базі. ` +
+    `Якщо його вже застосовано, db-deploy після merge впаде «Remote migration versions not found» — звірте журнал db-deploy.`;
   console.log(`Увага: ${text}`);
   if (process.env.GITHUB_ACTIONS === "true") console.log(`::warning title=migration-order::${text}`);
 }

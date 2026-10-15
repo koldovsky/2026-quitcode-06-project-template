@@ -1,58 +1,67 @@
-# Шаблон командного проєкту: Next.js + Supabase + OpenSpec
+# Шаблон проєкту розробника: Next.js + Supabase + OpenSpec
 
-Стартовий репозиторій для вебзастосунку «з нуля» в умовах, як у проєкті агенції: **одна команда — один репозиторій**.
-PM створює з шаблону репозиторій команди, розробники працюють у ньому як collaborators: спільна реалізація,
-задачі (issues) → гілки → PR → рев'ю колеги → merge. Форків немає. В агенції шаблон так само береться для нового
-клієнтського проєкту; у курсі — кожна команда (PM + розробники) для свого навчального продукту.
+Стартовий репозиторій для вебзастосунку «з нуля». Кожен розробник команди створює з шаблону **власне** репо й робить у
+ньому **свою** реалізацію продукту команди: власні Supabase і Vercel, задачі → гілки → PR → CodeRabbit → merge.
+Вимоги веде PM у своєму репо вимог (шаблон [`koldovsky/2026-quitcode-06-spec-template`](https://github.com/koldovsky/2026-quitcode-06-spec-template)):
+сюди вони приходять командою агента `/spec-sync`, без скриптів і тегів. Наприкінці PM порівнює, як різні розробники
+(і їхні агенти) прочитали й реалізували ті самі вимоги. В агенції шаблон так само береться для нового клієнтського проєкту.
 
 - **Застосунок:** Next.js 16 (App Router, `src/`), вхід email + пароль через Supabase Auth, сторінка
   з email і роллю користувача з таблиці `profiles`; сесію оновлює `src/proxy.ts`.
-- **База як код:** одна база Supabase на команду; `supabase/migrations/` (профілі й ролі з RLS і явними GRANT),
+- **База як код:** ваша власна база Supabase; `supabase/migrations/` (профілі й ролі з RLS і явними GRANT),
   ідемпотентний `seed.sql`, синтетичні користувачі (`npm run users:demo`). Міграції в базу застосовує лише CI.
-- **Специфікація:** OpenSpec (`openspec/`) з правилами формату в `openspec/config.yaml`; продуктовий
-  контекст PM — `product/`; AC ID наскрізно: спека → задача → назва тесту → `docs/conformance.md`.
-- **Агенти:** `AGENTS.md` (+ `CLAUDE.md` = `@AGENTS.md`), команди `/opsx:*` і `/conformance`, скіли
-  `spec-clarify` (розробник) і `spec-review` (PM) — однаково в Claude Code і Cursor; `.mcp.json` (Supabase MCP
-  лише на читання) і `.claude/settings.json` (заборона читати `.env*` і запускати `supabase db push` та деструктивні
-  команди Supabase CLI) діють лише в Claude Code — Cursor цих файлів не читає (див. AGENTS.md, «Секрети»).
+- **Специфікація:** OpenSpec (`openspec/`) з правилами в `openspec/config.yaml`. `product/` і `openspec/specs/` — копія
+  вимог PM (оновлює лише `/spec-sync`), `openspec/changes/impl-<зріз>` — ваш план реалізації; AC ID наскрізно:
+  вимога → задача → назва тесту → `docs/conformance.md`.
+- **Агенти:** `AGENTS.md` (+ `CLAUDE.md` = `@AGENTS.md`), команди `/spec-sync`, `/conformance` і `/opsx:*`, скіл
+  `spec-clarify` — однаково в Claude Code і Cursor; `.mcp.json` (Supabase MCP лише на читання) і `.claude/settings.json`
+  (заборона читати `.env*` і запускати `supabase db push` та деструктивні команди Supabase CLI) діють лише в Claude Code —
+  Cursor цих файлів не читає (див. AGENTS.md, «Секрети»).
 - **Ворота:** GitHub Actions `ci.yml` (`spec`, `app`, `conformance`, `db-check` — обов'язкові для PR; `db-deploy` — міграції
-  в прод після merge), `.github/CODEOWNERS`, шаблон PR, форми issues «Питання до специфікації» і «Задача», `.coderabbit.yaml`.
+  в прод після merge), ruleset `solo-main`, шаблон PR, `.coderabbit.yaml`.
 
 | Шар курсу | Де в шаблоні |
 |---|---|
-| Правила й команди | `AGENTS.md`, `CLAUDE.md`, `.claude/commands/`, `.cursor/commands/` |
+| Правила й команди | `AGENTS.md`, `CLAUDE.md`, `.claude/commands/` (`spec-sync`, `conformance`, `opsx/`), `.cursor/commands/` |
 | Скіли | `.claude/skills/` (Cursor читає цю ж теку) |
 | MCP з мінімальними правами | `.mcp.json`, `.claude/settings.json` (лише Claude Code) |
 | Специфікації | `product/`, `openspec/`, `scripts/check-*.mjs`, `docs/conformance.md` |
-| Командна робота | `.github/` (CI, CODEOWNERS, шаблони), `docs/bootstrap.md`, `docs/onboarding.md`, `docs/team.md` |
+| Процес і ворота | `.github/` (CI, шаблон PR), `.coderabbit.yaml`, `docs/bootstrap.md` |
 
-## Модель роботи: один репозиторій команди
+## Модель роботи: репо вимог PM і власне репо розробника
 
 ```text
-шаблон (цей репозиторій)
-  └─ «Use this template» → <pm>/<team-repo>   (публічний, особистий акаунт PM)
-        ├─ main            ← лише через PR (ruleset: 1 approve, CODEOWNERS, зелений CI); теги spec-vX.Y
-        ├─ spec/<id>       ← PM: зміна специфікації (рев'ю техліда); product/context — продуктовий контекст
-        ├─ task/<N>-…      ← розробник: задача з issue #N (рев'ю колеги)
-        └─ onboarding/<login>, template/<коротко>
-  Supabase: організація <team-slug> PM, один проєкт (розробники — Developer)   ← міграції застосовує CI (db-deploy)
-  Vercel: проєкт PM, прод з main, preview для кожного PR
+ PM:  <pm>/<team-slug>-spec          (шаблон вимог, публічне)
+      main = поточні вимоги: product/ + openspec/specs/
+      issues «Питання до специфікації» (мітка spec-question) — тут питають і відповідають
+          ▲ питання й пропозиції                    │ /spec-sync у Claude Code чи Cursor:
+          │ (issue через вебформу)                  ▼ агент копіює вимоги з main PM у ваше репо
+ Ви:  <dev>/<team-slug>              (цей шаблон, публічне) — у кожного розробника своє
+        ├─ main               ← лише через PR (ruleset solo-main: зелений CI, 0 approve)
+        ├─ sync/<дата>        ← /spec-sync: product/, openspec/specs/, docs/conformance.md
+        ├─ task/<коротко>     ← реалізація: код, міграції, тести, рядки матриці
+        └─ template/<коротко> ← виправлення шаблону (cherry-pick)
+      Supabase: ваша організація й проєкт   ← міграції застосовує CI (db-deploy)
+      Vercel: ваш проєкт, прод з main, preview для кожного PR
 ```
 
-| Роль | Хто | Що робить |
+Три правила:
+
+1. **Вимоги — у `main` репо PM.** PM злив зміни в `main` і написав у чат команди «вимоги оновлено».
+2. **У своєму репо ви підтягуєте вимоги командою `/spec-sync`.** `product/` і `openspec/specs/` руками не правите.
+3. **Питання й пропозиції до вимог — issues у репо PM** (вебформа `https://github.com/<pm>/<team-slug>-spec/issues/new/choose`).
+   Відповіді там само — їх бачить уся команда.
+
+| Роль | Де працює | Що робить |
 |---|---|---|
-| PM | власник репозиторію, Supabase-організації й проєкту, Vercel-проєкту | налаштування (`docs/bootstrap.md`), `product/` і зміни специфікації, відповіді на `spec-question`, теги `spec-vX.Y`, задачі разом із техлідом |
-| Техлід | один із розробників (обирає команда) | співвласник спеки в CODEOWNERS, рев'ю PR-ів PM зі спекою, зміна `impl-<зріз>` (design + tasks) з командою, `npm run users:demo` |
-| Розробник | collaborator (Write) | онбординг (`docs/onboarding.md`), питання до спеки, задачі (PR), рев'ю PR-ів колег |
+| PM | репо вимог `<pm>/<team-slug>-spec` | `product/`, зміни OpenSpec, відповіді на issues `spec-question`, `product/CHANGELOG.md`; наприкінці — нотатка-порівняння реалізацій |
+| Розробник | власне репо `<dev>/<team-slug>` з цього шаблону | налаштування (`docs/bootstrap.md`), `/spec-sync`, питання (`spec-clarify`), зміна `impl-<зріз>`, задачі PR-ами |
 
-Автор PR не може схвалити свій PR, тому PR PM зі спекою схвалює техлід, а PR розробника — будь-який колега
-(для `supabase/migrations/` і `openspec/`, зокрема archive `impl-<зріз>` в останньому PR зрізу, — власник із CODEOWNERS).
-Ruleset вимагає approve **останнього push** від іншої людини: будь-який ваш push після approve (виправлення за рев'ю,
-archive, `Update branch`) потребує нового approve; хто натиснув `Update branch`, стає автором останнього push і сам
-схвалити PR уже не може, тому гілку оновлює лише автор PR. Merge блокують і невирішені обговорення (Require conversation
-resolution): кожен коментар рев'ю — і CodeRabbit теж — виправте або дайте відповідь, потім **Resolve conversation**.
+Колег у вашому репо немає: approve не потрібен, рев'ю робить CodeRabbit (коментар `@coderabbitai review`), а ви
+відповідаєте на кожен його коментар — виправленням або поясненням, чому ні. Команда лишається: той самий бриф, чат,
+зустріч команди й питання в репо PM. Подивитися реалізації колег можна, але це необов'язково.
 
-## Перед початком (PM і розробники)
+## Перед початком
 
 - Node 24 (`node -v`), Git, GitHub CLI (`gh`).
 - OpenSpec CLI **глобально** й тієї ж версії, що в `package.json`:
@@ -60,78 +69,68 @@ resolution): кожен коментар рев'ю — і CodeRabbit теж — 
   (стара глобальна версія — оновіть тією ж командою). Команди `/opsx:*` і скіли `openspec-*` викликають
   просто `openspec`, а в PATH оболонки агента немає `node_modules/.bin`. Скрипти `npm run spec:*` і CI
   беруть версію з devDependencies. Телеметрію вимикає `openspec config set telemetry.enabled false`.
-- Docker **не** потрібен: локально — лише `npm run dev` проти бази команди; міграції на одноразовій базі перевіряє CI (`db-check`).
-
-## Шлях PM
-
-1. **Налаштування команди (день 0, одразу після старту).** Пройдіть чекліст `docs/bootstrap.md` по порядку:
-   **Use this template → Create a new repository** (власник — ваш особистий акаунт, **Public** від першого push і
-   назавжди: коміти колег, запушені в приватний репозиторій, Vercel Hobby блокує, і після відкриття вони лишаються
-   заблокованими) → collaborators (інвайти мають бути прийняті) → мітки `spec-question` і `task` →
-   CodeRabbit на репозиторій → Supabase (організація `<team-slug>`, проєкт, розробники —
-   роль **Developer**, реєстрацію й Confirm email вимкнено, URL Configuration) → environment `production` із секретом
-   `SUPABASE_DB_URL` → Vercel (дві змінні `NEXT_PUBLIC_…`, Require Log In вимкнено) → **Actions → CI → Run workflow**
-   на `main` з `include_seed` (перша міграція й сид) → `npm run users:demo` → зелений CI на `main` → PR `setup/codeowners` (ваш логін і логін техліда; approve техліда) → ruleset `main`
-   (імпорт `materials/rulesets/team-main.json` з курсового репозиторію) → посилання в чат команди.
-   Докази — у тому ж файлі, PR-ом «Онбординг».
-2. **Продукт.** У гілці `product/context` заповніть `product/vision.md`, `glossary.md`, `roles.md` (матриця прав),
-   `roadmap.md` → `npm run spec:check` → PR → рев'ю техліда → merge.
-   Справжні назви клієнта — не в файли репозиторію, а в локальний `product/denylist.local.txt` (у `.gitignore`;
-   `npm run spec:check` читає його, але значень не друкує) і в секрет репозиторію `SPEC_DENYLIST` (Settings → Secrets
-   and variables → Actions) — CI отримує його в усіх PR-ах з гілок цього репозиторію.
-3. **Перший зріз.** `npm ci`, `openspec --version` = `1.14.1`, гілка `spec/add-<зріз>`, потім у Claude Code
-   `/opsx:propose <опис зрізу>` (у Cursor `/opsx-propose`) або вручну: `npx openspec new change add-<зріз>` → `proposal.md` + `specs/<capability>/spec.md`.
-   Формат (вимоги EARS з SHALL, `#### Scenario: AC-<AREA>-<NN> …`) агент бере з `openspec/config.yaml`.
-   `/opsx:propose` за своєю інструкцією генерує й `design.md` і `tasks.md` (як реалізувати). У зміні PM їх не лишаємо —
-   це окрема зміна команди `impl-<зріз>`: додайте до запиту «пиши лише proposal.md і specs/, без design.md і tasks.md»,
-   а якщо агент їх усе ж створив — видаліть обидва файли до коміту.
-4. **Перевірка.** `npm run spec:validate`, `npm run spec:check`, скіл `spec-review`.
-5. **Реліз** — див. «Як виходить версія специфікації» нижче: PR → рев'ю техліда → archive + CHANGELOG + рядки нових AC
-   у гілці → повторний approve техліда → merge → тег `spec-v0.1`.
-6. **Питання розробників.** Відповідайте в issues `spec-question` (і в коментарях до них); рішення — у `product/decisions.md`;
-   якщо змінюється поведінка — нова зміна (MODIFIED/ADDED) і тег `spec-v0.2` тим самим потоком.
-7. **Задачі.** Разом із техлідом: з `openspec/changes/impl-<зріз>/tasks.md` — issues форми «Задача» (мітка `task`),
-   по одній на пункт; виконавця призначає собі розробник.
-8. **Оновлення шаблону** — див. «Оновлення шаблону» нижче.
+- Docker **не** потрібен: локально — лише `npm run dev` проти вашої бази; міграції на одноразовій базі перевіряє CI (`db-check`).
 
 ## Шлях розробника
 
-1. **Онбординг** (`docs/onboarding.md`): прийняти інвайти (GitHub, Supabase) → клон репозиторію команди → Node 24,
-   `npm ci` → `.env.local` з двома змінними `NEXT_PUBLIC_…` з Dashboard → `npm run dev` проти бази команди → вхід
-   синтетичним користувачем. **Перший PR** — рядок про себе в `docs/team.md` (тип «Онбординг») → рев'ю колеги → merge.
-2. **Читання спеки:** скіл `spec-clarify` → питання як issues `spec-question` у репозиторії команди (спершу пошук:
-   питання вже є — коментар із новим випадком у тому issue) → свій журнал `docs/spec-reading/<login>.md`.
-3. **Як реалізуємо:** техлід із командою — PR «Зміна специфікації» зі зміною `impl-<зріз>` (`npx openspec new change impl-<зріз>`,
-   `skip_specs: true` у `.openspec.yaml`, `design.md`, `tasks.md` з «Done when: AC-…») → задачі-issues.
-4. **Задача:** призначте себе в issue → `git switch main && git pull` → `git switch -c task/<N>-<коротко>` → код +
-   тести `it("AC-…: …")` → `/conformance` (рядок матриці → «реалізовано») → `npm run lint && npm run typecheck && npm test`
-   → push → PR «Реалізація задачі» з `Closes #N` → окремим коментарем `@coderabbitai review` → рев'ю колеги (обговорення
-   вирішено) → **Squash and merge** → прод-деплой Vercel. `openspec/changes/impl-<зріз>/tasks.md` у PR задачі не змінюйте
-   (галочок не ставимо: прогрес — закриті issues; якщо агент через `/opsx:apply` їх поставив — `git restore` цього файлу),
-   інакше PR потребує approve власника `openspec/` і конфліктує з паралельними PR-ами. В останньому PR зрізу, до merge, —
-   `npx openspec archive impl-<зріз> -y` (незакриті галочки `-y` пропускає з попередженням); approve — PM або техлід.
-5. **Міграція в задачі:** `npx supabase migration new <назва>` → SQL (RLS, GRANT, політики) → у тому ж PR; `db-check`
-   застосує всі міграції на одноразовій базі й звірить порядок з `main`; рев'ю — власник із CODEOWNERS; після merge
-   `db-deploy` застосує її в базу команди. Ніколи `supabase db push` з ноутбука, ніколи DDL у SQL Editor.
-   Типи для нових таблиць — готовий `database.types.ts` у Summary прогону `db-check`.
-6. **Рев'ю колег:** коментарі з посиланнями на рядки, конкретні пропозиції або обґрунтований approve. Гілку
-   (`Update branch`) оновлюйте лише при конфлікті: після будь-якого вашого push approve треба отримати знову.
-7. **Пропозиція змінити спеку** (помилка чи прогалина): питання `spec-question` або гілка `spec/<коротко>` від `main` →
-   зміна лише в `openspec/changes/<id>/` (`proposal.md` + дельта) → PR «Зміна специфікації». Рішення — за PM.
+1. **Налаштування (день 0).** Пройдіть чекліст `docs/bootstrap.md` по порядку: **Use this template → Create a new
+   repository** (власник — ваш особистий акаунт, назва `<team-slug>`, **Public**: ruleset на GitHub Free діє лише в
+   публічних репо) → CodeRabbit на репо → Supabase (власні організація й проєкт, реєстрацію й Confirm email вимкнено) →
+   environment `production` із секретом `SUPABASE_DB_URL` → Vercel (дві змінні `NEXT_PUBLIC_…`, Require Log In
+   вимкнено) → Supabase URL Configuration → **Actions → CI → Run workflow** на `main` з `include_seed` (перша міграція й
+   сид) → `npm run users:demo` → зелений CI на `main` → ruleset `solo-main` (імпорт `materials/rulesets/solo-main.json`
+   з курсового репо) → перший PR із заповненим `docs/bootstrap.md` (тип «Реалізація»).
+2. **Зустріч команди (дні 0–1).** Перший раунд питань до брифу; організує PM. Адреса репо вимог PM — у чаті команди.
+3. **Вимоги.** Коли PM написав «вимоги оновлено» — у Claude Code чи Cursor `/spec-sync <pm>/<team-slug>-spec` (адреса
+   потрібна лише вперше, далі просто `/spec-sync`; можна й словами: «підтягни оновлені вимоги») → звіт про нові AC →
+   PR «Оновлення вимог» → merge. Як це працює — розділ нижче.
+4. **Читання вимог:** скіл `spec-clarify` → питання як issues у репо PM через вебформу (спершу пошук: питання вже є —
+   коментар із новим випадком у тому issue) → журнал `docs/spec-reading.md`. `gh issue create` не використовуйте: без
+   доступу на запис до репо PM мітка `spec-question` мовчки губиться, а форма її ставить.
+5. **Як реалізуєте:** власна зміна `npx openspec new change impl-<зріз>` → `skip_specs: true` у `.openspec.yaml` →
+   `design.md` (таблиці, RLS, server actions, сторінки — з AC ID) і `tasks.md` (вертикальні задачі з «Done when: AC-…»)
+   → PR «Реалізація». Технічні рішення, які вимоги свідомо лишають відкритими, — ADR у `docs/decisions/`.
+6. **Задача:** `git switch main && git pull` → `git switch -c task/<коротко>` → код + тести `it("AC-…: …")` →
+   `/conformance` (рядок матриці → «реалізовано») → `npm run lint && npm run typecheck && npm test` → push → PR
+   «Реалізація» → окремим коментарем `@coderabbitai review` → виправлення або відповіді на коментарі → зелений CI →
+   **Squash and merge** → прод-деплой Vercel. Галочки в `openspec/changes/impl-<зріз>/tasks.md` ставте в PR задачі
+   (`/opsx:apply` робить це сам); в останньому PR зрізу, до merge, — `npx openspec archive impl-<зріз> -y`.
+7. **Міграція в задачі:** `npx supabase migration new <назва>` → SQL (RLS, GRANT, політики) → у тому ж PR; `db-check`
+   застосує всі міграції на одноразовій базі й звірить порядок з `main`; після merge `db-deploy` застосує її у вашу базу.
+   Ніколи `supabase db push` з ноутбука, ніколи DDL у SQL Editor. Типи для нових таблиць — готовий `database.types.ts`
+   у Summary прогону `db-check`.
+8. **Після уточнень PM (день 4) — знову `/spec-sync`.** Нові й змінені AC — у звіті й у матриці; хоча б один новий чи
+   змінений AC реалізуйте або відкладіть із посиланням на рішення PM.
 
-## Як виходить версія специфікації і що робити з новими AC
+## Як вимоги потрапляють у репо: `/spec-sync`
 
-1. PM: гілка `spec/<id>` → зміна → PR «Зміна специфікації» → рев'ю техліда (CODEOWNERS для `openspec/` і `product/`).
-2. У тій самій гілці, **до merge** (прямі коміти в `main` заборонені): `npx openspec archive <id> -y` → нові AC
-   потрапляють в `openspec/specs/` → запис у `product/CHANGELOG.md` → у `docs/conformance.md` рядок для **кожного нового
-   AC** зі статусом `відкладено (новий AC — чекає задачі)`, інакше job `conformance` червоний (NO-ROW). Цей push — після
-   approve, тож техлід схвалює PR ще раз (ruleset: approve останнього push).
-3. Merge → `git switch main && git pull` → `git tag spec-v0.1` → `git push origin spec-v0.1` (або Releases →
-   **Draft a new release** → новий тег на `main`; точні назви кнопок звіряємо на репетиції). Виправлення без нової
-   поведінки — тег `spec-vX.Y.Z`.
-4. Команда: нові й змінені AC → пункти `tasks.md` → issues «Задача» → PR задачі змінює рядок свого AC на `реалізовано`
-   разом із тестом. Тест із AC ID, якого ще немає в `openspec/specs/` на `main`, дає ORPHAN — задачу за новою
-   поведінкою починаємо після merge PR PM.
+Команда агента (`.claude/commands/spec-sync.md`; у Cursor — `.cursor/commands/spec-sync.md`, що відсилає до того ж
+файлу). Жодних скриптів синхронізації, тегів чи службових файлів: лише `git`, `npm` і шапка матриці. Агент:
+
+1. Бере адресу репо PM із шапки `docs/conformance.md` — рядок `Вимоги: <адреса> · коміт <40 символів> · <дата>`.
+   До першої синхронізації там `Вимоги: — (заповнює /spec-sync)`, і адресу дає аргумент (`<owner>/<repo>` або URL) чи
+   відповідь людини.
+2. Перевіряє, що робоче дерево чисте, оновлює `main` і робить гілку `sync/<дата>`.
+3. Бере свіжий `main` репо PM звичайним git — без тимчасових тек, у будь-якій оболонці:
+   `git fetch --depth 1 <адреса> main` → `git rm -r -q --ignore-unmatch product openspec/specs` →
+   `git checkout FETCH_HEAD -- product openspec/specs`.
+4. Показує, що змінилось: які AC і вимоги додано, змінено, прибрано; нові записи `product/CHANGELOG.md` і `product/decisions.md`.
+5. Оновлює `docs/conformance.md`: шапку (адреса · коміт · дата коміту PM); рядок кожного нового AC зі статусом
+   `відкладено (нова вимога — чекає реалізації)`; прибирає рядки прибраних AC і перелічує тести, що досі їх згадують;
+   рядки змінених AC лишає й перелічує для перевірки.
+6. Запускає `npm run spec:validate`, `npm run spec:check`, `npm run ac:coverage` (мають бути зелені; вимоги руками не правимо).
+7. Комітить «Оновлення вимог з `<owner>/<repo>@<sha7>`» і **лише після вашого «так»** пушить гілку й відкриває PR
+   «Оновлення вимог» (`gh pr create --web`).
+
+Що далі з новими AC: реалізуйте їх PR-ом «Реалізація» (тест + рядок «реалізовано») або залиште «відкладено» з
+конкретною причиною й посиланням на рішення PM: `відкладено (рішення PM: <pm>/<team-slug>-spec#7)`. Тест з AC ID,
+якого ще немає в `openspec/specs/`, дає ORPHAN — за новою поведінкою працюйте після злитого PR «Оновлення вимог».
+Якщо PM прибрав AC, на який посилаються ваші тести, `ac:coverage` покаже ORPHAN: `/spec-sync` запропонує прибрати ID з
+назв цих тестів окремим комітом у тій самій гілці (єдиний виняток із меж PR «Оновлення вимог»).
+
+Побічний ефект `--depth 1`: git позначає ваш локальний клон як неглибокий (`git rev-parse --is-shallow-repository` →
+`true`), бо коміт PM узято без історії. Ваших гілок і `main` це не стосується: push, fetch, `git log` і
+`scripts/check-migration-order.mjs` працюють як звичайно.
 
 ## Міграції в прод
 
@@ -143,10 +142,10 @@ resolution): кожен коментар рев'ю — і CodeRabbit теж — 
 вручну: **Actions → CI → Run workflow** на `main` з `include_seed` (`--include-seed`). Без секрету job пропускає
 крок з повідомленням. Перевіряємо прогоном у день 0.
 
-**Запасний шлях** (якщо `--db-url` не працює): офіційний `supabase link` + `supabase db push`. PM створює scoped token
-(Supabase → Account → Access Tokens; доступ лише до проєкту команди, дозвіл **Project Settings → API Keys → API Key
-Secrets: Read**) і задає в environment `production` секрети `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`,
-`SUPABASE_PROJECT_ID` (ref проєкту), а `SUPABASE_DB_URL` видаляє — `db-deploy` сам перейде на цей шлях:
+**Запасний шлях** (якщо `--db-url` не працює): офіційний `supabase link` + `supabase db push`. Створіть scoped token
+(Supabase → Account → Access Tokens; доступ лише до вашого проєкту, дозвіл **Project Settings → API Keys → API Key
+Secrets: Read**; точні назви перевірте в інтерфейсі) і задайте в environment `production` секрети `SUPABASE_ACCESS_TOKEN`,
+`SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID` (ref проєкту), а `SUPABASE_DB_URL` видаліть — `db-deploy` сам перейде на цей шлях:
 
 ```bash
 supabase link --project-ref "$SUPABASE_PROJECT_ID"   # токен і пароль — з env SUPABASE_ACCESS_TOKEN, SUPABASE_DB_PASSWORD
@@ -155,23 +154,23 @@ supabase db push --dry-run && supabase db push
 
 Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт про 403 на `supabase link` зі scoped token
 (supabase/supabase#50244) — тому цей шлях запасний; працює він у вашому проєкті чи ні, звіряємо прогоном.
-Класичний токен доступу (до всіх ваших організацій) у репозиторій, куди пишуть 5–7 людей, не кладемо.
+Класичний токен доступу відкриває всі ваші організації Supabase — у секрети репо його не кладемо.
 
 **Збої й відновлення:**
 
-- `db-check` FAIL `OLDER` — колега злив новішу міграцію раніше: перейменуйте свій файл новою міткою (команду `git mv`
+- `db-check` FAIL `OLDER` — міграцію з іншої вашої гілки злито раніше: перейменуйте файл новою міткою (команду `git mv`
   друкує `scripts/check-migration-order.mjs`) і запуште.
 - `db-deploy` FAIL «Found local migration files to be inserted before the last migration on remote database» — два PR-и
   з міграціями пройшли перевірки паралельно (статуси не вимагають «up to date») і злились у зворотному порядку. Окремий PR:
   `git mv` старшого (ще не застосованого — див. журнал `db-deploy`) файлу на нову мітку без зміни SQL → `db-check`
-  покаже попередження `RENAMED`, не FAIL → рев'ю власника з CODEOWNERS → merge → `db-deploy` застосує. Ніколи `--include-all`.
+  покаже попередження `RENAMED`, не FAIL → звірте журнал `db-deploy` → merge → `db-deploy` застосує. Ніколи `--include-all`.
 - `db-deploy` скасовано (cancelled) на якомусь коміті `main` — кілька merge поспіль: у групі `supabase-prod` GitHub тримає
   один прогін в очікуванні, і новіший замінює старіший. Нічого не втрачено: наступний прогін застосовує всі міграції з `main`.
-- `db-deploy` FAIL «Remote migration versions not found in local migrations directory» — хтось застосував міграцію не
-  через `main` (`db push` з ноутбука чи з гілки). Лише PM: якщо зміна потрібна — PR із цим файлом у `main`; якщо ні —
-  `supabase migration repair --status reverted <версія> --db-url "<рядок pooler>"` зі свого ноутбука й відкат змін схеми
-  новою міграцією (точний порядок звіряємо на репетиції).
-- Проєкт Free призупинено після тижня без активності — відновлює лише PM (Dashboard → **Restore project**; точну назву кнопки звіряємо на репетиції).
+- `db-deploy` FAIL «Remote migration versions not found in local migrations directory» — міграцію застосовано не
+  через `main` (`db push` з ноутбука чи з гілки). Якщо зміна потрібна — PR із цим файлом у `main`; якщо ні —
+  `supabase migration repair --status reverted <версія> --db-url "<рядок pooler>"` зі свого ноутбука (сам, не агентом:
+  `.claude/settings.json` це забороняє) і відкат змін схеми новою міграцією (точний порядок звіряйте з документацією Supabase CLI).
+- Проєкт Free призупинено після тижня без активності — Dashboard → **Restore project** (точну назву кнопки перевірте в інтерфейсі).
 
 ## Оновлення шаблону
 
@@ -181,8 +180,8 @@ Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт �
 `git remote add template https://github.com/koldovsky/2026-quitcode-06-project-template.git` → `git fetch template` →
 `git switch -c template/<коротко> origin/main` → `git cherry-pick <sha>` →
 `npm ci && npm run lint && npm run typecheck && npm test && npm run spec:check` →
-`git push -u origin template/<коротко>` → PR «Оновлення шаблону» → рев'ю (для `.github/` — власник із CODEOWNERS) → merge.
-Робить PM або техлід; решта команди отримує виправлення з `git pull` у `main`.
+`git push -u origin template/<коротко>` → PR «Оновлення шаблону» → зелений CI → merge.
+Кожен розробник переносить виправлення у своє репо сам.
 
 ## Перевірки
 
@@ -190,7 +189,7 @@ Scoped tokens вийшли в GA 06.10.2026, і є відкритий звіт �
 |---|---|
 | `npm run lint` / `typecheck` / `test` / `build` | ESLint без попереджень, типи (`next typegen` + `tsc`), Vitest, збірка з `ƒ Proxy (Middleware)` |
 | `npm run spec:validate` | `openspec validate --all --strict` — структура специфікацій |
-| `npm run spec:check` | AC ID на початку кожного `#### Scenario:` (схожий на ID, але з кириличною літерою чи трьома цифрами — з підказкою); унікальність у `openspec/specs` і після archive кожної активної зміни; denylist (за початком слова, тож ловить відмінки; фраза — і через перенесення рядка) у `product/`, `openspec/`, `docs/`, `src/`, `supabase/`, `tests/`, `README.md`, `AGENTS.md`; немає «бродячого» `product/denylist.local*` під іншим іменем; у кожній зміні без `skip_specs` — `proposal.md` з усіма сімома розділами в порядку правил |
+| `npm run spec:check` | AC ID на початку кожного `#### Scenario:` (схожий на ID, але з кириличною літерою чи трьома цифрами — з підказкою); унікальність у `openspec/specs` і після archive кожної активної зміни; denylist (за початком слова, тож ловить відмінки; фраза — і через перенесення рядка) у `product/`, `openspec/`, `docs/`, `src/`, `supabase/`, `tests/`, `README.md`, `AGENTS.md`; немає «бродячого» `product/denylist.local*` під іншим іменем; у кожній зміні без `skip_specs` — `proposal.md` з усіма сімома розділами в порядку правил PM |
 | `npm run ac:coverage` | кожен AC має рядок у `docs/conformance.md`; статус дослівно «реалізовано» або «відкладено (причина)»; «реалізовано» має непропущений тест у `*.test.ts(x)` у `src/` чи `tests/` (їх запускає `npm test`), назва якого починається з ID; шляхи з колонок «Код»/«Тест» існують; тести не посилаються на неіснуючі AC. E2e-тести (`tests/e2e/*.spec.ts`) не рахуються, доки їх не запускає крок CI |
 | `node scripts/check-migration-order.mjs` | міграції, яких немає в `origin/main` (перевизначення — `MIGRATION_BASE` або `--base <ref>`), новіші за найновішу там (`OLDER`); назви `<14 цифр>_<назва>.sql` (`NAME`); без однакових міток (`DUPLICATE`); застосовані файли не змінено (`CHANGED`) і не видалено (`DELETED`); той самий SQL старшого за найновіший файлу під новішою міткою — попередження `RENAMED` (відновлення, див. «Збої й відновлення») |
 | CI `db-check` | `supabase db start` — усі міграції й сид на одноразовій базі в раннері (що саме застосовує `db start`, звіряємо на першому прогоні); у PR — `check-migration-order.mjs`; готовий `database.types.ts` у Summary прогону |
@@ -241,9 +240,10 @@ npx openspec update
 
 # 5. Перенести з цього шаблону файли, написані вручну:
 #   src/proxy.ts, src/lib/supabase/*, src/app/{layout.tsx,page.tsx,login/*}, scripts/**, tests/**, vitest.config.mts,
-#   .claude/{settings.json,commands/conformance.md,skills/spec-*}, .cursor/commands/conformance.md, .cursorignore, .mcp.json,
+#   .claude/{settings.json,commands/spec-sync.md,commands/conformance.md,skills/spec-clarify},
+#   .cursor/commands/{spec-sync.md,conformance.md}, .cursorignore, .mcp.json,
 #   .github/**, .coderabbit.yaml, AGENTS.md (наші розділи після блоку Next.js), CLAUDE.md,
-#   product/**, docs/**, .env.example
+#   product/README.md, docs/**, .env.example
 rm -r public   # демо-SVG скелета шаблон не використовує
 # tsconfig.json: "exclude" + "tests/fixtures"; eslint.config.mjs: globalIgnores + "tests/fixtures/**"
 
@@ -263,11 +263,13 @@ npm run spec:validate && npm run spec:check && npm run ac:coverage
 - `setAll(cookies, headers)` у `src/lib/supabase/proxy.ts` копіює заголовки кешування у відповідь (`@supabase/ssr` ≥ 0.10).
 - `auto_expose_new_tables = false`: як у хмарі — нові проєкти без автогрантів приблизно з 30.05.2026, усі — з 30.10.2026.
 - Профіль OpenSpec зберігається на машині, а не в репозиторії, тому згенеровані `.claude/` і `.cursor/` закомічені.
+- Вимоги — командою агента, а не скриптом: `/spec-sync` — це кілька команд `git` і оновлення матриці, які агент і так
+  робить добре; людина бачить звіт і вирішує, чи пушити.
 
 ## Журнал виправлень шаблону
 
-Виправлення після дня 0. Викладач оголошує кожне в чаті курсу з SHA; PM або техлід переносить його в репозиторій
-команди PR-ом «Оновлення шаблону» (розділ «Оновлення шаблону» вище).
+Виправлення після дня 0. Викладач оголошує кожне в чаті курсу з SHA; кожен розробник переносить його у своє репо
+PR-ом «Оновлення шаблону» (розділ «Оновлення шаблону» вище).
 
 | Дата | SHA | Що виправлено |
 |---|---|---|
