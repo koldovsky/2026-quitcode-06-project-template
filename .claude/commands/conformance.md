@@ -1,7 +1,7 @@
 ---
 description: Перебудувати docs/conformance.md (AC → код → тест → статус) і показати прогалини покриття
 argument-hint: "[AREA або AC ID — необов'язково, щоб обмежити перевірку]"
-allowed-tools: Read, Grep, Glob, Edit, Bash(npm run ac:coverage), Bash(npm test *), Bash(npm run test *)
+allowed-tools: Read, Grep, Glob, Edit, Bash(npm run ac:coverage), Bash(npm test *), Bash(npm run test *), PowerShell(npm run ac:coverage), PowerShell(npm test *), PowerShell(npm run test *)
 ---
 
 Перебудуй матрицю відповідності `docs/conformance.md` цього репо. Обмеження (якщо задано): $ARGUMENTS

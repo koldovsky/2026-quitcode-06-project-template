@@ -1,7 +1,7 @@
 ---
 description: Підтягнути актуальні вимоги з main репо вимог PM (product/ і openspec/specs/), показати, що змінилось, оновити docs/conformance.md і підготувати PR «Оновлення вимог»
 argument-hint: "[<owner>/<repo> або URL репо вимог PM — потрібно лише вперше; для перевірки команди — локальний шлях]"
-allowed-tools: Read, Grep, Glob, Edit, Bash(git status *), Bash(git remote *), Bash(git branch *), Bash(git switch *), Bash(git pull *), Bash(git fetch *), Bash(git rev-parse *), Bash(git log *), Bash(git ls-tree *), Bash(git rm -r -q --ignore-unmatch product openspec/specs), Bash(git checkout FETCH_HEAD -- product openspec/specs), Bash(git grep *), Bash(git diff *), Bash(git show *), Bash(git add docs/conformance.md), Bash(git commit -m *), Bash(npm run spec:validate), Bash(npm run spec:check), Bash(npm run ac:coverage), Bash(node -p *)
+allowed-tools: Read, Grep, Glob, Edit, Bash(git status *), Bash(git remote *), Bash(git branch *), Bash(git switch *), Bash(git pull *), Bash(gh repo view *), Bash(git fetch *), Bash(git rev-parse *), Bash(git log *), Bash(git ls-tree *), Bash(git rm -r -q --ignore-unmatch product openspec/specs), Bash(git checkout FETCH_HEAD -- product openspec/specs), Bash(git grep *), Bash(git diff *), Bash(git show *), Bash(git add docs/conformance.md), Bash(git commit -m *), Bash(npm run spec:validate), Bash(npm run spec:check), Bash(npm run ac:coverage), Bash(node -p *), PowerShell(git status *), PowerShell(git remote *), PowerShell(git branch *), PowerShell(git switch *), PowerShell(git pull *), PowerShell(gh repo view *), PowerShell(git fetch *), PowerShell(git rev-parse *), PowerShell(git log *), PowerShell(git ls-tree *), PowerShell(git rm -r -q --ignore-unmatch product openspec/specs), PowerShell(git checkout FETCH_HEAD -- product openspec/specs), PowerShell(git grep *), PowerShell(git diff *), PowerShell(git show *), PowerShell(git add docs/conformance.md), PowerShell(git commit -m *), PowerShell(npm run spec:validate), PowerShell(npm run spec:check), PowerShell(npm run ac:coverage), PowerShell(node -p *)
 ---
 
 Підтягни в це репо актуальні вимоги з `main` репо вимог PM. Аргумент (якщо задано): $ARGUMENTS
@@ -19,8 +19,8 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git status *), Bash(git remote *), B
 - Лише звичайні `git` і `npm`: команди однаково працюють у bash, Git Bash і PowerShell, тимчасові теки не потрібні.
   Не пиши скриптів синхронізації й не став тегів.
 - Кожну команду з цієї інструкції запускай окремим викликом і дослівно, як написано: без додаткових прапорців (`-q`),
-  без змінних оболонки й без зчеплення через `&&` / `;` / `|`. Так їх пропускають дозволи команди (`allowed-tools`)
-  і людині не доводиться погоджувати кожен крок.
+  без змінних оболонки й без зчеплення через `&&` / `;` / `|`. Так їх пропускають дозволи команди (`allowed-tools`,
+  для Bash і PowerShell) і людині не доводиться погоджувати кожен крок; інше (push, PR) Claude Code спитає окремо.
 
 ## 1. Звідки брати вимоги
 
@@ -46,8 +46,11 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git status *), Bash(git remote *), B
    сховати (`git stash`). Сам нічого не відкочуй.
 2. `git switch main`, потім `git pull --ff-only`, якщо `git remote` показує `origin`. Гілку синхронізації робимо від свіжого
    `main`, щоб у PR не потрапили коміти з інших гілок.
-3. `git fetch --depth 1 <адреса> main` — лише останній коміт `main` репо PM у `FETCH_HEAD`; робоче дерево не змінюється.
-   Помилка (репо не знайдено, приватне, немає гілки `main`) — покажи її й зупинись.
+3. Для адреси на GitHub спершу `gh repo view <owner>/<repo> --json visibility -q .visibility` — має бути `PUBLIC`.
+   «Could not resolve to a Repository» — адреса неправильна або репо приватне; інша видимість — репо не публічне. В обох
+   випадках зупинись: попроси людину звірити адресу з чатом команди й попросити PM зробити репо публічним (так git не
+   питатиме логін). Потім `git fetch --depth 1 <адреса> main` — лише останній коміт `main` репо PM у `FETCH_HEAD`;
+   робоче дерево не змінюється. Помилка (немає гілки `main`, немає мережі) — покажи її й зупинись.
 4. `git rev-parse FETCH_HEAD` — коміт PM (40 символів); `git log -1 --format=%cs FETCH_HEAD` — дата цього коміту.
    Коміт той самий, що в шапці матриці, — скажи «Вимоги актуальні: <owner>/<repo>@<sha7> від <дата>» і зупинись.
 5. `git ls-tree -r --name-only FETCH_HEAD -- product openspec/specs` — у списку мають бути `product/…` і хоча б один
