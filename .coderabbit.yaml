@@ -1,8 +1,9 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 #
 # CodeRabbit для репо розробника: власна реалізація, гілки + PR, approve колег немає — рецензент тут CodeRabbit.
-# product/ і openspec/specs/ — копія вимог із репо PM (приносить команда агента /spec-sync у PR «Оновлення вимог»):
-# їхній зміст не рецензуємо (розробник його не змінює), лише межі PR.
+# requirements/ — знімок вимог PM (приносить лише команда агента /requirements-sync у PR «Оновлення вимог»): його зміст
+# не рецензуємо (розробник його не змінює), лише межі PR. openspec/ — специфікація розробника, переклад вимог PM: її
+# рецензуємо проти requirements/ (ті самі AC ID, нічого не вигадано й не загублено).
 # Публічні репозиторії з < 10 зірок не рецензуються автоматично — рев'ю запускає коментар `@coderabbitai review`
 # (нагадування є в шаблоні PR).
 # Усі перевірки СТАТИЧНІ (лише diff і файли репозиторію): рецензент нічого не запускає.
@@ -44,6 +45,7 @@ reviews:
   path_filters:
     - "src/**"
     - "supabase/**"
+    - "requirements/**"
     - "openspec/**"
     - "product/**"
     - "scripts/**"
@@ -89,23 +91,34 @@ reviews:
         в Client Components; застарілі `*_ANON_KEY` / `SERVICE_ROLE_KEY` не використовуємо.
         Server actions перевіряють вхідні дані й роль користувача, не покладаючись лише на UI.
         Тести поведінки мають AC ID на початку назви: `it("AC-AREA-01: …")`.
+    - path: "requirements/**"
+      instructions: |
+        Знімок вимог PM (issues «Продукт» і «Вимога» або файли docs/ його репо); його приносить лише команда агента
+        /requirements-sync у PR типу «Оновлення вимог» (гілка sync/*). Не пропонуй правок тексту: вимоги пише PM у своєму
+        репо, питання до PM — issue «Питання до вимог» у репо PM. Перевір лише, що файли змінюються тільки в PR «Оновлення
+        вимог», кожен починається рядком «> Джерело: …», а в docs/conformance.md того ж PR змінено лише рядок «Вимоги: …»
+        у шапці (рядків таблиці тут немає).
     - path: "openspec/specs/**"
       instructions: |
-        Копія канонічних вимог PM з його репо вимог; її приносить команда агента /spec-sync у PR типу «Оновлення вимог»
-        (гілка sync/*). Не пропонуй правок тексту вимог і сценаріїв: розробник їх не змінює, питання до PM ідуть issue
-        в репо PM. Перевір лише, що ці файли змінюються тільки в PR «Оновлення вимог», а docs/conformance.md у тому ж PR
-        має рядок для кожного нового AC ID.
+        Специфікація розробника — переклад вимог PM із requirements/**; змінюється лише archive зміни специфікації в PR
+        «Специфікація» (гілка spec/*). Перевір: кожна вимога — одне речення з SHALL або MUST; назва кожного сценарію
+        починається з AC ID, який є в requirements/** (ID PM не змінено й не перенумеровано); числа, межі й ролі
+        збігаються з текстом PM; немає правил, яких немає у вимогах PM; docs/conformance.md у тому ж PR має рядок для
+        кожного нового AC і не має рядків прибраних.
     - path: "openspec/changes/**"
       instructions: |
-        Власна зміна розробника impl-<зріз>: .openspec.yaml зі `skip_specs: true`, без теки specs/ (вимоги — лише з репо PM);
-        proposal.md короткий (Why, What Changes — які AC покриває); design.md — рішення (таблиці, міграції з GRANT + RLS,
-        server actions, сторінки) з посиланнями на AC ID; tasks.md — вертикальні задачі, кожна закінчується
-        «Done when: AC-…». Кожен згаданий AC ID має існувати в openspec/specs/**.
+        Зміни розробника. Зміна специфікації (add-<зріз> або уточнення; без skip_specs): proposal.md з розділами Why,
+        What Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions; дельти specs/ з SHALL і
+        сценаріями з ID PM; нова можливість — з ## Purpose; без design.md і tasks.md; неясне у вимогах PM — в Open
+        questions з посиланням на issue в репо PM, а не вигадане правило. План impl-<зріз>: .openspec.yaml зі
+        `skip_specs: true`, без теки specs/; proposal.md короткий (Why, What Changes — які AC покриває); design.md —
+        рішення (таблиці, міграції з GRANT + RLS, server actions, сторінки) з посиланнями на AC ID; tasks.md —
+        вертикальні задачі, кожна закінчується «Done when: AC-…»; кожен згаданий AC ID має існувати в openspec/specs/**.
     - path: "product/**"
       instructions: |
-        Копія продуктового контексту PM (vision, глосарій, ролі й матриця прав, roadmap, рішення, CHANGELOG, denylist) з репо
-        вимог PM; її приносить /spec-sync у PR типу «Оновлення вимог». Зміст не рецензуй (за нього й анонімізацію
-        відповідає PM у своєму репо); перевір лише, що каталог змінюється тільки в PR «Оновлення вимог».
+        Лише списки заборонених слів для npm run spec:check: README.md і необов'язковий публічний product/denylist.txt
+        (локальний product/denylist.local.txt зі справжніми назвами — у .gitignore). Перевір, що в публічних файлах
+        немає справжніх назв клієнтів чи імен людей і що інших файлів тут немає (вимоги PM — у requirements/).
     - path: "scripts/**"
       instructions: |
         Node-скрипти без зайвих залежностей. Секрети читаються лише зі змінних середовища й ніколи не
@@ -124,26 +137,30 @@ reviews:
         name: "Тип PR і межі змін"
         instructions: >
           Static review of the diff and PR description only; do NOT run anything. Read the PR type
-          checkbox in the description (Оновлення вимог = Requirements sync, Реалізація = Implementation,
-          Оновлення шаблону = Template update). product/** and openspec/specs/** are a read-only copy of
-          the PM's requirements repo and may change ONLY in a Requirements sync. Requirements sync (branch
-          sync/*, made by the /spec-sync agent command): the diff touches only product/**, openspec/specs/**
-          and docs/conformance.md (the header line "Вимоги: <url> · коміт <40-char sha> · <date>", a row with
-          status "відкладено (нова вимога — чекає реалізації)" for every new AC ID, rows of removed AC IDs
-          deleted); the only allowed extra is one separate commit that strips AC IDs removed by this sync
-          from test titles or removes a word newly added to product/denylist.txt from the developer's files.
-          Implementation (branch task/* or setup/*): src/**, supabase/**, tests/**, docs/** and the
-          developer's own openspec/changes/** (impl-*), but NOT product/** or openspec/specs/**. Template
-          update (branch template/*): cherry-picked course-template commits; any path except product/** and
-          openspec/specs/**. FAIL if any PR other than a Requirements sync modifies product/** or
-          openspec/specs/**, or if a Requirements sync goes beyond its paths; answer in Ukrainian.
+          checkbox in the description (Оновлення вимог = Requirements sync, Специфікація = Specification,
+          Реалізація = Implementation, Оновлення шаблону = Template update). requirements/** is a snapshot of
+          the PM's requirements written ONLY by the /requirements-sync agent command. Requirements sync
+          (branch sync/*): the diff touches only requirements/** (every file starts with a "> Джерело:" source
+          line) and, in docs/conformance.md, only the header line "Вимоги: <url or path> · джерело:
+          issues|docs · знімок <YYYY-MM-DD>"; no table rows. Specification (branch spec/*): openspec/** (a spec
+          change archived into openspec/specs/** in the same branch, or an impl-* plan), docs/conformance.md
+          table rows (a row with status "відкладено (чекає реалізації)" for every new AC ID, rows of removed AC
+          IDs deleted) and docs/spec-reading.md; the only allowed extra is one separate commit that strips AC
+          IDs removed from the spec from test titles. Implementation (branch task/* or setup/*): src/**,
+          supabase/**, tests/**, docs/conformance.md rows, docs/decisions/**, docs/bootstrap.md, docs/img/**,
+          supabase/demo-users.json, and checkboxes or the archive of openspec/changes/impl-*; NOT requirements/**
+          and NOT openspec/specs/**. Template update (branch template/*): cherry-picked course-template commits;
+          any path except requirements/** and openspec/specs/**. FAIL if any PR other than a Requirements sync
+          modifies requirements/** or the "Вимоги:" header line, if any PR other than a Specification modifies
+          openspec/specs/**, or if a PR goes beyond the paths of its type; answer in Ukrainian.
 
       - mode: "warning"
         name: "AC ID у тестах і матриці відповідності"
         instructions: >
           Static review only; do NOT execute the test suite. If the diff adds or changes behaviour in
           src/** or supabase/**, check that it adds or updates tests whose test()/it() titles start
-          with the AC ID they cover (format AC-AREA-NN), that those tests are not .skip/.todo, and
+          with the AC ID they cover (format AC-AREA-NN, an ID that exists in openspec/specs/**), that
+          those tests are not .skip/.todo, and
           that docs/conformance.md rows for these AC IDs are updated in the same PR with status
           "реалізовано" or "відкладено (причина)". FAIL if behaviour changed without such tests or
           matrix rows. Answer in Ukrainian.
@@ -170,14 +187,21 @@ reviews:
           *@example.test). Variable NAMES in .env.example and docs are fine. Answer in Ukrainian.
 
       - mode: "warning"
-        name: "Власна зміна impl: design і tasks з AC ID"
+        name: "Переклад вимог PM і план impl"
         instructions: >
-          Static review of changed files under openspec/changes/** only (the developer's own impl-*
-          changes and their archive copies); PASS if none changed. Do NOT review openspec/specs/**: it is
-          the PM's requirements copied by /spec-sync. Check: .openspec.yaml has skip_specs: true and the
-          change has no specs/ folder; design.md decisions cite the AC IDs they serve; every tasks.md task
-          ends with "Done when: AC-…"; every cited AC ID exists in openspec/specs/**. List each violation
-          with file and line. Answer in Ukrainian.
+          Static review of changed files under openspec/changes/** and openspec/specs/** only (including
+          archive copies); PASS if none changed. requirements/** is the PM's requirements snapshot; AC IDs
+          are defined there by lines that start with "AC-<AREA>-<NN>:" under «Критерії приймання». Spec
+          changes (no skip_specs in .openspec.yaml, for example add-*): proposal.md has the sections Why, What
+          Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions; every delta requirement
+          is one sentence with SHALL or MUST; every "#### Scenario:" title starts with an AC ID that exists in
+          requirements/** (no renamed, renumbered or invented IDs); every AC ID defined in the requirements/**
+          files that the proposal cites appears as exactly one scenario; numbers, limits and roles match the
+          PM text; behaviour that requirements/** does not state is listed under Open questions, not added as
+          a rule; the change has no design.md or tasks.md. Implementation plans (impl-*): .openspec.yaml has
+          skip_specs: true and no specs/ folder; design.md decisions cite the AC IDs they serve; every
+          tasks.md task ends with "Done when: AC-…"; every cited AC ID exists in openspec/specs/**. List each
+          violation with file and line. Answer in Ukrainian.
 
       - mode: "warning"
         name: "Supabase у Next.js: proxy і getClaims"

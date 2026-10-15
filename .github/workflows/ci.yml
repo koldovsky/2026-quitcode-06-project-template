@@ -1,12 +1,14 @@
 # CI вашого репо (власна реалізація; гілки + PR). Один workflow — п'ять jobs:
-#   spec        — структура копії вимог PM (openspec validate --strict) + AC ID, унікальність, denylist;
+#   spec        — структура вашої специфікації (openspec validate --strict) + AC ID, унікальність, denylist
+#                 (зокрема в requirements/ — знімку вимог PM);
 #   app         — lint (0 warnings), typecheck (typegen + tsc), unit-тести, build;
-#   conformance — кожен AC з openspec/specs має рядок у docs/conformance.md, кожне «реалізовано» — тест;
+#   conformance — кожен AC з openspec/specs має рядок у docs/conformance.md, кожне «реалізовано» — тест
+#                 (AC вимог PM, ще не перекладені в openspec/specs, — лише попередження);
 #   db-check    — без секретів: усі міграції (і сид) на одноразовій базі в раннері (supabase db start, Docker
 #                 є на ubuntu-latest); у PR ще й порядок міграцій відносно main (scripts/check-migration-order.mjs);
 #   db-deploy   — лише main (push або ручний запуск): міграції у вашу базу через environment production.
-# Вимоги (product/, openspec/specs/) — копія з репо вимог PM, яку приносить команда агента /spec-sync; CI перевіряє
-# її так само, як ваші файли. Обов'язкові перевірки ruleset-у solo-main: spec, app, conformance, db-check.
+# Вимоги PM (requirements/) — знімок, який приносить команда агента /requirements-sync; специфікація (openspec/) — ваш
+# переклад цих вимог. Обов'язкові перевірки ruleset-у solo-main: spec, app, conformance, db-check.
 # Назви jobs не змінюйте.
 # db-check запускається й на push у main: так його назва з'являється в списку перевірок для ruleset,
 # а db-deploy не стартує, якщо міграції з main не застосовуються на чисту базу.
@@ -77,8 +79,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # Нові AC потрапляють в openspec/specs лише через /spec-sync: у тому ж PR «Оновлення вимог» команда додає для
-      # кожного рядок «відкладено (нова вимога — чекає реалізації)», інакше тут NO-ROW.
+      # Нові AC потрапляють в openspec/specs через archive зміни специфікації: у тому ж PR «Специфікація» для кожного
+      # додають рядок «відкладено (чекає реалізації)» (/conformance), інакше тут NO-ROW.
       - name: Every AC has a matrix row; every «реалізовано» has a test
         run: npm run ac:coverage
 
