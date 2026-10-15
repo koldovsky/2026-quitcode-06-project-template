@@ -105,8 +105,8 @@ describe("scripts/check-ac-coverage.mjs", () => {
     const warn = out.slice(out.indexOf("WARN не перекладено"));
     // Рядок, що починається з ID (зокрема в блоці ``` поля issue-форми), — визначення AC; його немає в openspec/specs.
     expect(warn).toMatch(/вимогу PM ще не перекладено в специфікацію: AC-DEMO-03 \(requirements\/7-leave-request\.md:\d+\)/);
-    // Перекладені AC, згадка посеред рядка, README.md, «Відкриті питання» й «Журнал змін» — без попередження.
-    for (const id of ["AC-DEMO-01", "AC-DEMO-02", "AC-DEMO-05", "AC-DEMO-06", "AC-DEMO-08", "AC-DEMO-09"]) {
+    // Перекладені AC, згадка посеред рядка, HTML-коментар, README.md, «Відкриті питання» й «Журнал змін» — без попередження.
+    for (const id of ["AC-DEMO-01", "AC-DEMO-02", "AC-DEMO-04", "AC-DEMO-05", "AC-DEMO-06", "AC-DEMO-08", "AC-DEMO-09"]) {
       expect(warn).not.toContain(id);
     }
     expect(out).not.toContain("FAIL");

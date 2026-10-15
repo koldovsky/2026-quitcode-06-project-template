@@ -109,7 +109,8 @@ export function collectSpecAcs(dir = path.join(root(), "openspec", "specs")) {
 // _template.md не рахуються). Визначення — рядок, що ПОЧИНАЄТЬСЯ з AC ID (після необов'язкових маркера списку,
 // цитати, заголовка чи жирного шрифту), за яким іде двокрапка або тире: так за шаблоном вимоги PM пише критерій
 // приймання — «AC-LEAVE-01: Дано … Коли … Тоді …». Згадки посеред рядка («див. AC-LEAVE-02») і розділи «Журнал змін»
-// та «Відкриті питання» (там PM згадує прибрані чи чужі AC) — не визначення. Блоки ``` НЕ пропускаємо: поле
+// та «Відкриті питання» (там PM згадує прибрані чи чужі AC) — не визначення; HTML-коментарі <!-- … --> теж (так PM
+// приховує підказки шаблону чи прибраний критерій: на сторінці їх не видно). Блоки ``` НЕ пропускаємо: поле
 // issue-форми з `render:` GitHub загортає саме в такий блок.
 const REQUIREMENT_AC_DEF = new RegExp(
   `^\\s*(?:>\\s*)?(?:#{1,6}\\s+)?(?:[-*+]\\s+|\\d+[.)]\\s+)?(?:\\[[ xX]\\]\\s+)?(?:\\*\\*|__)?(${AC_ID})(?![\\w-])` +
@@ -121,7 +122,7 @@ export function collectRequirementAcs(dir = path.join(root(), "requirements")) {
   const skipFile = (r) => /^requirements\/(README|_template)\.md$/i.test(r);
   for (const file of walk(dir, { filter: (r) => isMarkdown(r) && !skipFile(r) })) {
     let skipSection = false;
-    readText(file)
+    stripHtmlComments(readText(file))
       .split("\n")
       .forEach((line, i) => {
         const heading = line.match(/^\s*#{1,6}\s+(.*)$/);
