@@ -1,4 +1,4 @@
-# Vision
+# Продукт (fixture)
 
 Клієнт — Wide World
 Importers (перенесення рядка).

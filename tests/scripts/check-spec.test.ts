@@ -50,15 +50,15 @@ describe("scripts/check-spec.mjs", () => {
     const { code, out } = run("denylist");
     expect(code).toBe(1);
     expect(out).toContain("openspec/specs/leave/spec.md:3");
-    // «Нортвінд» у denylist.txt ловить «Нортвінду» у тексті
-    expect(out).toContain('product/vision.md:3 — "Нортвінд"');
+    // «Нортвінд» у denylist.txt ловить «Нортвінду» у тексті знімка вимог PM (requirements/)
+    expect(out).toContain('requirements/product.md:3 — "Нортвінд"');
     expect(out).not.toContain("product/denylist.txt");
   });
 
   it("reads extra words from SPEC_DENYLIST without printing them", () => {
     const { code, out } = run("denylist", { SPEC_DENYLIST: "Fabrikam,Northwind" });
     expect(code).toBe(1);
-    expect(out).toContain("product/roadmap.md:3 — слово #1 із SPEC_DENYLIST");
+    expect(out).toContain("requirements/7-leave-request.md:3 — слово #1 із SPEC_DENYLIST");
     expect(out).not.toContain("Fabrikam");
   });
 
@@ -66,21 +66,21 @@ describe("scripts/check-spec.mjs", () => {
     const { code, out } = run("denylist-local");
     expect(code).toBe(1);
     // «Тейлспін» з локального файлу ловить «Тейлспіну»; значення не друкуємо
-    expect(out).toContain("product/vision.md:3 — слово #2 із product/denylist.local.txt");
-    expect(out).toContain("product/roadmap.md:3 — слово #1 із product/denylist.local.txt");
+    expect(out).toContain("requirements/product.md:3 — слово #2 із product/denylist.local.txt");
+    expect(out).toContain("requirements/7-leave-request.md:3 — слово #1 із product/denylist.local.txt");
     expect(out).not.toMatch(/Woodgrove|Тейлспін/);
     // сам локальний файл не сканується, публічний список працює як раніше
     expect(out).not.toContain("product/denylist.local.txt:");
     expect(out).toContain("слів у denylist: 3");
   });
 
-  it("catches a phrase wrapped across lines, look-alike letters, soft hyphens, &nbsp; and names outside product/openspec", () => {
+  it("catches a phrase wrapped across lines, look-alike letters, soft hyphens, &nbsp; and names outside requirements/openspec", () => {
     const { code, out } = run("denylist-wide");
     expect(code).toBe(1);
-    expect(out).toContain('product/vision.md:3 — "Wide World Importers"');
-    expect(out).toContain('product/vision.md:5 — "Нортвінд"');
-    expect(out).toContain('product/roadmap.md:3 — "Нортвінд"');
-    expect(out).toContain('product/roadmap.md:4 — "Wide World Importers"');
+    expect(out).toContain('requirements/product.md:3 — "Wide World Importers"');
+    expect(out).toContain('requirements/product.md:5 — "Нортвінд"');
+    expect(out).toContain('requirements/7-leave-request.md:3 — "Нортвінд"');
+    expect(out).toContain('requirements/7-leave-request.md:4 — "Wide World Importers"');
     expect(out).toContain('docs/spec-reading.md:3 — "Нортвінд"');
     expect(out).toContain('supabase/seed.sql:2 — "Wide World Importers"');
     expect(out).toContain('supabase/demo-users.json:2 — "Нортвінд"');
@@ -103,7 +103,7 @@ describe("scripts/check-spec.mjs", () => {
     expect(out).not.toContain("SecretName");
   });
 
-  it("requires proposal.md with all sections in order in PM changes; skip_specs changes are exempt", () => {
+  it("requires proposal.md with all sections in order in spec changes; impl plans with skip_specs are exempt", () => {
     const { code, out } = run("proposal");
     expect(code).toBe(1);
     expect(out).toContain("openspec/changes/no-proposal — бракує proposal.md");

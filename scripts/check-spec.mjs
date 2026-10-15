@@ -8,15 +8,16 @@
 //      той самий ID двічі в зміні, ADDED-ID, який уже є в openspec/specs, MODIFIED-сценарій з ID чужої вимоги;
 //      і дві активні зміни не вводять той самий новий ID;
 //   4) жодне слово зі списку заборонених (product/denylist.txt + локальний product/denylist.local.txt
-//      + змінна середовища SPEC_DENYLIST) не трапляється в product/, openspec/, docs/, src/, supabase/,
-//      tests/ (без tests/scripts і tests/fixtures), README.md і AGENTS.md (без урахування регістру; збіг за
+//      + змінна середовища SPEC_DENYLIST) не трапляється в requirements/ (знімок вимог PM), openspec/, docs/, src/,
+//      supabase/, tests/ (без tests/scripts і tests/fixtures), README.md і AGENTS.md (без урахування регістру; збіг за
 //      ПОЧАТКОМ слова, тож «Контосо» ловить і «Контосо», і «Контосою», і «Контосо-офіс»; фраза ловиться й
 //      через перенесення рядка, латинські й кириличні літери-двійники рівноцінні; транслітерацію — ні);
 //      поруч із product/denylist.local.txt немає «бродячих» копій (denylist.local.txt.txt тощо: .gitignore
 //      їх ховає, але spec:check їх не читає);
-//   5) у кожній зміні (openspec/changes/<id> і archive/<id>) без `skip_specs: true` у .openspec.yaml є
-//      proposal.md з розділами Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions,
-//      Open questions у цьому порядку (інші розділи, як-от Impact, — між ними чи після них).
+//   5) у кожній зміні специфікації (openspec/changes/<id> і archive/<id> без `skip_specs: true` у .openspec.yaml:
+//      add-<зріз>, уточнення після відповіді PM) є proposal.md з розділами Why, What Changes, Capabilities,
+//      Users & roles, Non-goals, Assumptions, Open questions у цьому порядку (інші розділи, як-от Impact, — між ними
+//      чи після них); план реалізації impl-<зріз> (skip_specs: true) цього не потребує.
 // Код виходу: 0 — усе гаразд, 1 — є помилки.
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -171,9 +172,9 @@ for (const [id, list] of introducedBy) {
   }
 }
 
-// 4. Denylist — три джерела (рядки, # — коментар):
-//    product/denylist.txt        — публічний: внутрішні слова, які не мають потрапити в специфікації;
-//    product/denylist.local.txt  — ЛОКАЛЬНИЙ, у .gitignore: справжні назви клієнтів на машині PM;
+// 4. Denylist — три джерела (рядки, # — коментар); тека product/ — лише для цих двох файлів (і README):
+//    product/denylist.txt        — публічний (ваш, необов'язковий): слова, які не мають потрапити в репо;
+//    product/denylist.local.txt  — ЛОКАЛЬНИЙ, у .gitignore: справжні назви клієнтів (список PM надсилає особисто);
 //    SPEC_DENYLIST               — секрет CI (через кому або з нового рядка): ті самі назви для GitHub Actions.
 //    Справжні назви клієнтів у публічному репо — лише в локальному файлі й секреті: інакше сам файл стане витоком.
 //    Значення з локального файлу й секрету не друкуємо (екран можуть бачити інші — демонстрація, запис).
@@ -229,7 +230,8 @@ if (words.length) {
     };
   });
   const denylistPaths = new Set(DENYLIST_FILES.map((d) => d.file));
-  // Не лише спека: розробник пише назви в docs/, коді, сидах і тестах. Не скануємо lock-файли (base64-хеші
+  // Не лише спека: знімок вимог PM (requirements/), а ще розробник пише назви в docs/, коді, сидах і тестах.
+  // product/ не скануємо: там лише самі списки denylist. Не скануємо lock-файли (base64-хеші
   // дають хибні збіги), бінарні файли, згенеровані типи й тести самих скриптів (tests/scripts, tests/fixtures:
   // там слова denylist навмисно).
   const skipScan = (r) =>
@@ -240,7 +242,7 @@ if (words.length) {
     r === "src/lib/supabase/database.types.ts" ||
     /\.(png|jpe?g|gif|webp|ico|svg|pdf|woff2?|ttf|otf|mp4|webm|zip|lock)$/i.test(r) ||
     /(^|\/)package-lock\.json$/.test(r);
-  const SCAN_DIRS = ["product", "openspec", "docs", "src", "supabase", "tests"];
+  const SCAN_DIRS = ["requirements", "openspec", "docs", "src", "supabase", "tests"];
   const scanned = [
     ...SCAN_DIRS.flatMap((d) => walk(path.join(root(), d), { skip: skipScan })),
     ...["README.md", "AGENTS.md"].map((f) => path.join(root(), f)).filter((f) => existsSync(f)),
@@ -259,7 +261,7 @@ if (words.length) {
   }
 }
 
-// 5. Розділи proposal.md у змінах PM (зміни розробника мають skip_specs: true і цього не потребують).
+// 5. Розділи proposal.md у змінах специфікації (план impl-<зріз> має skip_specs: true і цього не потребує).
 const PROPOSAL_SECTIONS = ["Why", "What Changes", "Capabilities", "Users & roles", "Non-goals", "Assumptions", "Open questions"];
 const changeDirs = (dir) =>
   existsSync(dir) ? readdirSync(dir).filter((n) => n !== "archive" && statSync(path.join(dir, n)).isDirectory()) : [];
@@ -286,7 +288,7 @@ for (const dir of [changesDir, path.join(changesDir, "archive")]) {
     if (gap) {
       errors.proposal.push(
         `${rel(full)} — бракує ${gap} (порядок: Why, What Changes, Capabilities, Users & roles, Non-goals, Assumptions, Open questions; ` +
-          `зміна розробника — додайте skip_specs: true у .openspec.yaml)`,
+          `якщо це план реалізації impl-<зріз> без specs/ — додайте skip_specs: true у .openspec.yaml)`,
       );
     }
   }
@@ -303,7 +305,7 @@ printList("DUPLICATE: AC ID повторюється в openspec/specs", errors.
 printList("DUPLICATE-CHANGE: активна зміна дасть дубль AC ID після archive", errors.changeDuplicate);
 printList("DENYLIST: заборонене слово (анонімізація)", errors.denylist);
 printList("STRAY-DENYLIST: локальний denylist під іншим іменем (spec:check його не читає)", errors.stray);
-printList("PROPOSAL: зміна без skip_specs (зміна PM) без proposal.md або без розділу з правил openspec/config.yaml", errors.proposal);
+printList("PROPOSAL: зміна специфікації (без skip_specs) без proposal.md або без розділу з правил openspec/config.yaml", errors.proposal);
 if (total) {
   console.log(`\nFAIL: помилок — ${total}.`);
   process.exit(1);
