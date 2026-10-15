@@ -1,11 +1,13 @@
-# CI репозиторію команди (один репозиторій, гілки + PR). Один workflow — п'ять jobs:
-#   spec        — структура специфікацій (openspec validate --strict) + AC ID, унікальність, denylist;
+# CI вашого репо (власна реалізація; гілки + PR). Один workflow — п'ять jobs:
+#   spec        — структура копії вимог PM (openspec validate --strict) + AC ID, унікальність, denylist;
 #   app         — lint (0 warnings), typecheck (typegen + tsc), unit-тести, build;
-#   conformance — кожен AC має рядок у docs/conformance.md, кожне «реалізовано» — тест;
+#   conformance — кожен AC з openspec/specs має рядок у docs/conformance.md, кожне «реалізовано» — тест;
 #   db-check    — без секретів: усі міграції (і сид) на одноразовій базі в раннері (supabase db start, Docker
 #                 є на ubuntu-latest); у PR ще й порядок міграцій відносно main (scripts/check-migration-order.mjs);
-#   db-deploy   — лише main (push або ручний запуск): міграції в базу команди через environment production.
-# Обов'язкові перевірки ruleset-у main: spec, app, conformance, db-check. Назви jobs не змінюйте.
+#   db-deploy   — лише main (push або ручний запуск): міграції у вашу базу через environment production.
+# Вимоги (product/, openspec/specs/) — копія з репо вимог PM, яку приносить команда агента /spec-sync; CI перевіряє
+# її так само, як ваші файли. Обов'язкові перевірки ruleset-у solo-main: spec, app, conformance, db-check.
+# Назви jobs не змінюйте.
 # db-check запускається й на push у main: так його назва з'являється в списку перевірок для ruleset,
 # а db-deploy не стартує, якщо міграції з main не застосовуються на чисту базу.
 name: CI
@@ -17,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       include_seed:
-        description: "db-deploy: застосувати й supabase/seed.sql (--include-seed) — лише PM, перший запуск"
+        description: "db-deploy: застосувати й supabase/seed.sql (--include-seed) — перший запуск у день 0"
         type: boolean
         default: false
 
@@ -75,8 +77,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      # Після archive нової зміни PM нові AC потрапляють в openspec/specs: у тому ж PR PM додає для кожного рядок
-      # «відкладено (новий AC — чекає задачі)», інакше тут NO-ROW.
+      # Нові AC потрапляють в openspec/specs лише через /spec-sync: у тому ж PR «Оновлення вимог» команда додає для
+      # кожного рядок «відкладено (нова вимога — чекає реалізації)», інакше тут NO-ROW.
       - name: Every AC has a matrix row; every «реалізовано» has a test
         run: npm run ac:coverage
 
