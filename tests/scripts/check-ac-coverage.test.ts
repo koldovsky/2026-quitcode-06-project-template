@@ -92,7 +92,7 @@ describe("scripts/check-ac-coverage.mjs", () => {
     expect(out).not.toContain("MISSING");
   });
 
-  it("accepts the PM's rows for new AC: «відкладено (новий AC — чекає задачі)»", () => {
+  it("accepts the rows /spec-sync adds for new AC: «відкладено (нова вимога — чекає реалізації)»", () => {
     const { code, out } = run("new-ac");
     expect(out).toContain("рядків у матриці: 2");
     expect(code).toBe(0);
