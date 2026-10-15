@@ -83,9 +83,14 @@ Docker не потрібен: локально — лише npm run dev прот
 - [ ] **Squash and merge** → прод-деплой Vercel пройшов — <!-- посилання -->
 - [ ] (З першою задачею, що має міграцію) `db-check` зелений, після merge `db-deploy` застосував її у вашу базу — <!-- посилання на run -->
 
-## 8. Вимоги PM
+## 8. Вимоги PM і специфікація
 
 - [ ] Адресу репо вимог PM узято з чату команди; на зустрічі команди (дні 0–1, організує PM) — перший раунд питань до брифу
-- [ ] PM написав «вимоги оновлено» → у Claude Code чи Cursor `/spec-sync <pm>/<team-slug>-spec` → PR «Оновлення вимог»
-      злито; шапка `docs/conformance.md` показує адресу, коміт і дату — <!-- посилання на PR -->
-- [ ] Журнал `docs/spec-reading.md` — скіл `spec-clarify` після першої синхронізації; питання — issues у репо PM
+- [ ] PM написав у чаті команди «вимоги оновлено» (у курсі перші вимоги — до кінця 16.10) → у Claude Code чи Cursor
+      `/requirements-sync <pm>/<team-slug>-spec` → PR «Оновлення вимог» злито; шапка `docs/conformance.md` показує
+      адресу, джерело (issues чи docs) і дату знімка — <!-- посилання на PR -->
+- [ ] Читання вимог: скіл `spec-clarify` → питання — issues «Питання до вимог» у репо PM через вебформу → журнал
+      `docs/spec-reading.md` — <!-- посилання на issues -->
+- [ ] Переклад у специфікацію (гілка `spec/add-<зріз>`): `/opsx:propose add-<зріз>` → `npx openspec validate add-<зріз> --strict`
+      → скіл `spec-review` → `npx openspec archive add-<зріз> -y` → `/conformance` → PR «Специфікація» злито;
+      `npm run ac:coverage` без «вимогу PM ще не перекладено» — <!-- посилання на PR -->
