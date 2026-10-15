@@ -6,8 +6,8 @@
   без рядків прибраних AC). Виняток — окремий коміт, що прибирає з ваших файлів ID прибраних PM AC (назви тестів, інакше
   ORPHAN) або слово з нового `product/denylist.txt` PM (інакше DENYLIST).
 - [ ] **Реалізація** — гілка `task/<коротко>` (у день 0 — `setup/bootstrap`): `src/`, `supabase/migrations/`, тести,
-  `docs/conformance.md`, `docs/decisions/`, `docs/spec-reading.md`, `docs/bootstrap.md`, `supabase/demo-users.json`, власна
-  зміна `openspec/changes/impl-<зріз>/`. Без `product/` і `openspec/specs/`.
+  `docs/conformance.md`, `docs/decisions/`, `docs/spec-reading.md`, `docs/bootstrap.md`, `docs/img/`,
+  `supabase/demo-users.json`, власна зміна `openspec/changes/impl-<зріз>/`. Без `product/` і `openspec/specs/`.
 - [ ] **Оновлення шаблону** — гілка `template/<коротко>`: `git cherry-pick` коміту шаблону курсу (README, «Оновлення шаблону»).
 
 ## Вимоги
