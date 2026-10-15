@@ -34,7 +34,8 @@
 ## Кожна вимога (`### Requirement: …`)
 
 13. **[блокер] EARS + SHALL/MUST.** Одне речення: `WHEN …, the system SHALL …` / `IF …, THEN the system SHALL …` /
-    `WHILE …, …`; ключове слово англійською, решта — українською.
+    `WHILE …, the system SHALL …` / `WHERE …, the system SHALL …` / `The system SHALL …` (правило діє завжди); ключові
+    слова EARS, «the system» і SHALL/MUST — англійською, решта — українською.
 14. **Назва — це ID вимоги.** Перейменування лише через `## RENAMED Requirements`.
 15. **MODIFIED** містить повністю скопійований блок вимоги з усіма сценаріями.
 16. **Нова можливість** — дельта починається з `## Purpose` (інакше після archive `validate --strict` падає на заглушці).

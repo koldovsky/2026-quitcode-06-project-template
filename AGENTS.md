@@ -81,9 +81,9 @@ OpenSpec 1.14.1 (devDependency + глобальний CLI тієї ж версі
   `npx openspec archive <id> -y` у тій самій гілці → `/conformance` (рядки нових AC «відкладено (чекає реалізації)») →
   PR. Після уточнень PM — нова зміна специфікації з ADDED / MODIFIED / REMOVED (ID AC PM не змінюються).
 - Питання й пропозиції до вимог — issues у репо PM лише через його вебформу «Питання до вимог»
-  (`…/issues/new?template=question.yml`; адреса — з шапки `docs/conformance.md`) з посиланням на вимогу (`#N` або файл)
-  і AC, не `gh issue create`: скіл `spec-clarify`; спершу шукай наявне issue — дублікатів не створюємо; журнал —
-  `docs/spec-reading.md`.
+  (`…/issues/new?template=question.yml`; адреса — з шапки `docs/conformance.md`) з повною адресою вимоги (issue PM
+  або шлях `docs/requirements/…`) і AC, не `gh issue create`: скіл `spec-clarify`; спершу шукай наявне issue —
+  дублікатів не створюємо; журнал — `docs/spec-reading.md`.
 - Усе йде в `main` лише через PR (ruleset `solo-main`): зелені `spec`, `app`, `conformance`, `db-check`; approve не потрібен.
 - Типи PR (шаблон PR):
   - «Оновлення вимог» (`sync/<дата>`) — лише `requirements/` і рядок «Вимоги: …» шапки `docs/conformance.md`;
