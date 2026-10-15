@@ -1,7 +1,7 @@
 ---
 description: Підтягнути актуальні вимоги PM (issues «Продукт» і «Вимога» його репо або файли docs/) у теку requirements/, показати, що змінилось, оновити шапку docs/conformance.md і підготувати PR «Оновлення вимог»
 argument-hint: "[<owner>/<repo> або URL репо вимог PM — потрібно лише вперше; для перевірки команди — локальний шлях]"
-allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remote), Bash(git remote -v), Bash(git branch --list), Bash(git switch main), Bash(git switch -c sync/*), Bash(git pull --ff-only), Bash(gh repo view *), Bash(gh issue list *), Bash(gh issue view *), Bash(git fetch *), Bash(git rev-parse *), Bash(git log *), Bash(git ls-tree *), Bash(git rm -r -q --ignore-unmatch requirements), Bash(git checkout FETCH_HEAD -- docs/*), Bash(git mv docs/requirements requirements), Bash(git mv docs/product.md requirements/product.md), Bash(git add requirements), Bash(git add requirements docs/conformance.md), Bash(git grep *), Bash(git diff *), Bash(git show *), Bash(git commit -m *), Bash(npm run spec:check), Bash(npm run ac:coverage), PowerShell(git status *), PowerShell(git remote), PowerShell(git remote -v), PowerShell(git branch --list), PowerShell(git switch main), PowerShell(git switch -c sync/*), PowerShell(git pull --ff-only), PowerShell(gh repo view *), PowerShell(gh issue list *), PowerShell(gh issue view *), PowerShell(git fetch *), PowerShell(git rev-parse *), PowerShell(git log *), PowerShell(git ls-tree *), PowerShell(git rm -r -q --ignore-unmatch requirements), PowerShell(git checkout FETCH_HEAD -- docs/*), PowerShell(git mv docs/requirements requirements), PowerShell(git mv docs/product.md requirements/product.md), PowerShell(git add requirements), PowerShell(git add requirements docs/conformance.md), PowerShell(git grep *), PowerShell(git diff *), PowerShell(git show *), PowerShell(git commit -m *), PowerShell(npm run spec:check), PowerShell(npm run ac:coverage)
+allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remote), Bash(git remote -v), Bash(git branch --list), Bash(git switch main), Bash(git switch -c sync/*), Bash(git pull --ff-only), Bash(gh repo view *), Bash(gh issue list *), Bash(gh issue view *), Bash(git fetch *), Bash(git rev-parse *), Bash(git log *), Bash(git ls-tree *), Bash(git rm -r -q --ignore-unmatch requirements), Bash(git clean -q -f -d -X -- requirements), Bash(git checkout FETCH_HEAD -- docs/*), Bash(git mv docs/requirements requirements), Bash(git mv docs/product.md requirements/product.md), Bash(git add requirements), Bash(git add requirements docs/conformance.md), Bash(git grep *), Bash(git diff *), Bash(git show *), Bash(git commit -m *), Bash(npm run spec:check), Bash(npm run ac:coverage), PowerShell(git status *), PowerShell(git remote), PowerShell(git remote -v), PowerShell(git branch --list), PowerShell(git switch main), PowerShell(git switch -c sync/*), PowerShell(git pull --ff-only), PowerShell(gh repo view *), PowerShell(gh issue list *), PowerShell(gh issue view *), PowerShell(git fetch *), PowerShell(git rev-parse *), PowerShell(git log *), PowerShell(git ls-tree *), PowerShell(git rm -r -q --ignore-unmatch requirements), PowerShell(git clean -q -f -d -X -- requirements), PowerShell(git checkout FETCH_HEAD -- docs/*), PowerShell(git mv docs/requirements requirements), PowerShell(git mv docs/product.md requirements/product.md), PowerShell(git add requirements), PowerShell(git add requirements docs/conformance.md), PowerShell(git grep *), PowerShell(git diff *), PowerShell(git show *), PowerShell(git commit -m *), PowerShell(npm run spec:check), PowerShell(npm run ac:coverage)
 ---
 
 Підтягни в це репо актуальні вимоги PM. Аргумент (якщо задано): $ARGUMENTS
@@ -29,7 +29,7 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remot
 ## 1. Свіжий `main` і адреса репо PM
 
 1. `git status --porcelain` має бути порожнім. Інакше зупинись: покажи список змін і попроси людину закомітити їх або
-   сховати (`git stash`). Сам нічого не відкочуй.
+   сховати (`git stash -u` — разом із новими, ще не відстежуваними файлами). Сам нічого не відкочуй.
 2. `git switch main`, потім `git pull --ff-only`, якщо `git remote` показує `origin`. Гілку синхронізації робимо від
    свіжого `main`, щоб у PR не потрапили коміти з інших гілок. Помилка (наприклад, локальний `main` розійшовся з
    `origin/main`) — покажи її й зупинись.
@@ -88,6 +88,12 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remot
 `git rm -r -q --ignore-unmatch requirements` — прибирає з індексу й робочої теки попередній знімок (і
 `requirements/README.md` шаблону). Тепер `HEAD` — вимоги «до».
 
+Потім `git status --porcelain --ignored -- requirements`. Рядки `D  requirements/…` — щойно прибраний знімок, так і
+має бути. Рядок, що починається з `!!` (`!! requirements/`), — у теці лишились файли, які git ігнорує (типово
+`.DS_Store`, який створює Finder у macOS): тоді `git clean -q -f -d -X -- requirements` — прибирає лише ігноровані файли
+цієї теки (інших там немає: дерево було чисте, крок 1.1). Без цього для джерела docs `git mv` поклав би теку PM
+всередину наявної — `requirements/requirements/…`.
+
 **Джерело issues.** Для issue «Продукт» і кожного issue «Вимога» з кроку 2.2 —
 `gh issue view <N> --repo <owner>/<repo> --json title,body,updatedAt,url` і файл:
 
@@ -114,13 +120,18 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remot
 і кожен файл вимог `docs/requirements/…` (без `_template.md` і `README.md`). Файли PM лягають у `docs/` і одразу в
 індекс. Перенеси їх у `requirements/`:
 
-1. `git mv docs/requirements requirements` — теки `requirements/` після `git rm` немає (крок 1.1: незакомічених
-   файлів не було), тож тека PM цілком стає `requirements/`, з підтеками;
+1. `git mv docs/requirements requirements` — теки `requirements/` після `git rm` і `git clean` немає, тож тека PM
+   цілком стає `requirements/`, з підтеками;
 2. `git mv docs/product.md requirements/product.md` — якщо `docs/product.md` був.
 
-Ваших файлів у `docs/` це не зачіпає: у вашому репо немає `docs/product.md` і `docs/requirements/`. `git status --porcelain`
-має показати зміни лише в `requirements/…`. На початок кожного перенесеного файлу допиши два рядки — рядок джерела й
-порожній, текст PM нижче не змінюй:
+Ваших файлів у `docs/` це не зачіпає: у вашому репо немає `docs/product.md` і `docs/requirements/`. Перевір
+`git status --porcelain`: файли PM мають бути рівно `requirements/<шлях після docs/requirements/>` і
+`requirements/product.md`. Є шлях, що починається з `requirements/requirements/` або `docs/` (наприклад, тека
+`requirements/` таки лишилась, бо її тримала відкритою інша програма: термінал, відкритий у цій теці, Провідник чи редактор, і `git mv` поклав теку PM у неї), —
+зупинись: покажи список і запропонуй скасувати гілку; після «так»: `git reset -q --hard`, `git switch main`,
+`git branch -D sync/<…>`. Попроси людину закрити програми, що тримають теку `requirements/`, і повторити
+`/requirements-sync`. На початок кожного перенесеного файлу допиши два рядки — рядок джерела й порожній, текст PM нижче
+не змінюй:
 
 `> Джерело: <адреса>/blob/<коміт, 40 hex>/<шлях у репо PM> · коміт <sha7> · <дата коміту>`
 
@@ -140,15 +151,17 @@ allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status *), Bash(git remot
   `git diff --cached -I"^> Джерело:" -- requirements`.
 - **AC:** `git grep -h -o -E "AC-[A-Z]{2,12}-[0-9]{2}" HEAD -- requirements` (було) і
   `git grep --cached -h -o -E "AC-[A-Z]{2,12}-[0-9]{2}" -- requirements` (стало); код виходу 1 без виводу — AC немає
-  (перша синхронізація: усі AC нові). Це всі згадки. AC **визначено**, якщо рядок у розділі «Критерії приймання»
-  починається з його ID (`AC-…: Дано … Коли … Тоді …`) — так його рахує `npm run ac:coverage`; згадки в «Журнал змін»,
-  «Відкриті питання» й посеред тексту — не визначення.
+  (перша синхронізація: усі AC нові). Це всі згадки. AC **визначено**, якщо рядок починається з його ID
+  (`- AC-…: Дано … Коли … Тоді …` у розділі «Критерії приймання») — так його рахує `npm run ac:coverage`; згадки в
+  «Журнал змін», «Відкриті питання», посеред тексту й усередині HTML-коментарів `<!-- … -->` (PM так приховує текст:
+  на сторінці його не видно) — не визначення.
   - **Нові AC** — визначені лише «після»; **прибрані** — лише «до»; **змінені** — в обох, але текст критерію (від ID до
     наступного AC чи заголовка) відрізняється. AC, що перейшов в інший файл із тим самим текстом, — «перенесено».
 - **Журнал змін PM:** нові рядки в розділах «Журнал змін» (рядки `+` у diff) — дослівно, з посиланнями на питання `#N`.
 - **Продукт:** що змінилось у `requirements/product.md` (ролі й права, глосарій, roadmap, поза межами) — 1–3 рядки.
 - **Ваша специфікація:** для змінених і прибраних AC —
-  `git grep -n -E "<ID1>|<ID2>" -- openspec/specs src tests ":(exclude)tests/fixtures" ":(exclude)tests/scripts"`:
+  `git grep -n -e <ID1> -e <ID2> -- openspec/specs src tests ":(exclude)tests/fixtures" ":(exclude)tests/scripts"`
+  (по `-e` на кожен ID; код виходу 1 без виводу — ніде немає):
   де вони вже є у вашій специфікації, коді й тестах (`tests/fixtures` і `tests/scripts` — дані й тести скриптів шаблону).
 
 Покажи людині звіт:
@@ -185,8 +198,8 @@ HTML-коментар і рядки таблиці лишаються як є (�
 ## 7. Коміт, push і PR
 
 1. `git add requirements docs/conformance.md`, потім `git diff --cached --name-only`: лише `requirements/…` і
-   `docs/conformance.md`. Є щось інше (наприклад, `docs/requirements/…` після невдалого перенесення) — зупинись і з'ясуй
-   з людиною.
+   `docs/conformance.md`. Є щось інше або шлях `requirements/requirements/…` (невдале перенесення, крок 3) — зупинись і
+   з'ясуй з людиною.
 2. `git commit -m "Оновлення вимог з <owner>/<repo> (<issues|docs>, <РРРР-ММ-ДД>)"`.
 3. Спитай: «Пушимо гілку `sync/<…>` і відкриваємо PR „Оновлення вимог“?» — і чекай явного «так». Після нього:
    `git push -u origin sync/<…>`, потім `gh pr create --web` (браузер із шаблоном PR: позначте тип «Оновлення вимог»;
